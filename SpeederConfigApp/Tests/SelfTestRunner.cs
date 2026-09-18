@@ -236,6 +236,111 @@ namespace SpeederConfigApp.Tests
             var toggleStyle = System.Windows.Application.Current?.FindResource("ComboBoxToggleButtonStyle") as System.Windows.Style;
             Assert(toggleStyle != null, "Themes/ModernTheme defines ComboBoxToggleButtonStyle");
 
+            // Test 9: Macro Engine Tests (Task 3)
+            Log("-------------------------------------------------");
+            Log("  MACRO ENGINE TESTS");
+            Log("-------------------------------------------------");
+
+            string sampleMacroIni = @"; Combat Cooldown Rotation
+[113]
+keys=!cm|gt8
+keys2=cc1|81|dbg % Q key|s300
+keys3=cc2|87|dbg % W key|s300
+keys4=cc3|69|dbg % E key|s300
+keys5=cc4|82|dbg % R key|s300
+keys6=cc5|70|dbg % F key|s300
+keys7=cc6|71|dbg % G key|s300
+keys8=s10
+repeat=2
+
+; Helper function test
+[fTest]
+keys=dbg % test line 1
+keys2=dbg % test line 2
+keys3=dbg % test line 3
+";
+
+            var macroModel = MacroFileModel.ParseIni(sampleMacroIni);
+            Assert(macroModel != null, "MacroFileModel.ParseIni returns a valid model");
+            Assert(macroModel!.Macros.Count == 2, "Parsed macro count is exactly 2");
+
+            var m0 = macroModel.Macros[0];
+            Assert(m0.TriggerKey == 113, "Macro 0 TriggerKey == 113 (F2)");
+            Assert(!m0.IsFunction, "Macro 0 !IsFunction");
+            Assert(m0.Repeat == 2, "Macro 0 Repeat == 2");
+            Assert(m0.KeysLines.Count == 8, "Macro 0 KeysLines.Count == 8");
+            Assert(m0.KeysLines[0] == "!cm|gt8" && m0.KeysLines[7] == "s10", "Macro 0 first and last KeysLines match");
+            Assert(m0.SectionHeader == "113", "Macro 0 SectionHeader == \"113\"");
+            Assert(m0.Description.Contains("Combat Cooldown Rotation"), "Macro 0 Description loaded from comments");
+            Assert(m0.DisplayName.Contains("[F2 (113)]"), "Macro 0 DisplayName resolves F2 key code");
+
+            var m1 = macroModel.Macros[1];
+            Assert(m1.IsFunction, "Macro 1 IsFunction == true");
+            Assert(m1.FunctionName == "fTest", "Macro 1 FunctionName == \"fTest\"");
+            Assert(m1.KeysLines.Count == 3, "Macro 1 KeysLines.Count == 3");
+            Assert(m1.KeysLines[0] == "dbg % test line 1", "Macro 1 KeysLines[0] matches");
+            Assert(m1.SectionHeader == "fTest", "Macro 1 SectionHeader == \"fTest\"");
+            Assert(m1.Description.Contains("Helper function test"), "Macro 1 Description loaded from comments");
+            Assert(m1.DisplayName.Contains("[fTest]"), "Macro 1 DisplayName contains [fTest]");
+
+            // Round-trip test
+            string generatedIni = macroModel.GenerateIni();
+            var roundTripModel = MacroFileModel.ParseIni(generatedIni);
+            Assert(roundTripModel.Macros.Count == 2, "Round-trip preserves macro count (2)");
+
+            var rt0 = roundTripModel.Macros[0];
+            var rt1 = roundTripModel.Macros[1];
+            Assert(rt0.TriggerKey == m0.TriggerKey && rt0.IsFunction == m0.IsFunction && rt0.Repeat == m0.Repeat &&
+                   rt0.KeysLines.Count == m0.KeysLines.Count && rt0.KeysLines.SequenceEqual(m0.KeysLines),
+                   "Round-trip macro 0 matches properties and all KeysLines");
+            Assert(rt1.IsFunction == m1.IsFunction && rt1.FunctionName == m1.FunctionName &&
+                   rt1.KeysLines.Count == m1.KeysLines.Count && rt1.KeysLines.SequenceEqual(m1.KeysLines),
+                   "Round-trip macro 1 matches properties and all KeysLines");
+
+            // Default templates test
+            var defaultTemplates = MacroFileModel.CreateDefaultTemplates();
+            Assert(defaultTemplates.Macros.Count == 8, "CreateDefaultTemplates returns exactly 8 items");
+            Assert(defaultTemplates.Macros[0].TriggerKey == 113 && defaultTemplates.Macros[0].Repeat == 2,
+                   "Template 0 is F2 Combat Rotation with Repeat=2");
+            Assert(defaultTemplates.Macros[1].TriggerKey == 114 && defaultTemplates.Macros[1].EndKeys == "lt-",
+                   "Template 1 is F3 Player Target Lock with endkeys=lt-");
+            Assert(defaultTemplates.Macros[2].TriggerKey == 115 && defaultTemplates.Macros[2].KeysLines.Count == 9,
+                   "Template 2 is F4 Target Lock & Combat Rotation with 9 KeysLines");
+            Assert(defaultTemplates.Macros[3].TriggerKey == 116 && defaultTemplates.Macros[3].EndKeys == "m(VAR % CX),(VAR % CY)",
+                   "Template 3 is F5 Quick Target & Return Cursor with cursor restore endkeys");
+            Assert(defaultTemplates.Macros[4].TriggerKey == 117 && defaultTemplates.Macros[4].Repeat == 2,
+                   "Template 4 is F6 Continuous Rock Gatherer with Repeat=2");
+            Assert(defaultTemplates.Macros[5].TriggerKey == 102 && defaultTemplates.Macros[5].Repeat == 0,
+                   "Template 5 is NUMPAD6 Speed Increase (+1%)");
+            Assert(defaultTemplates.Macros[6].TriggerKey == 100 && defaultTemplates.Macros[6].Repeat == 0,
+                   "Template 6 is NUMPAD4 Speed Decrease (-1%)");
+            Assert(defaultTemplates.Macros[7].IsFunction && defaultTemplates.Macros[7].FunctionName == "fTest",
+                   "Template 7 is fTest Reusable Helper Function");
+
+            // Deep clone test
+            var clone = m0.Clone();
+            clone.TriggerKey = 120;
+            clone.KeysLines.Add("s999");
+            Assert(clone.TriggerKey == 120 && m0.TriggerKey == 113, "MacroItem.Clone modifies clone without altering original TriggerKey");
+            Assert(clone.KeysLines.Count == 9 && m0.KeysLines.Count == 8, "MacroItem.Clone creates independent KeysLines collection");
+
+            // Interrupt and EndKeys serialization / parsing
+            var customMacro = new MacroItem
+            {
+                TriggerKey = 112,
+                Repeat = 1,
+                Interrupt = 0,
+                EndKeys = "2u|store % moveCursor,0"
+            };
+            customMacro.KeysLines.Add("cc100|81");
+            var customModel = new MacroFileModel();
+            customModel.Macros.Add(customMacro);
+            var customIni = customModel.GenerateIni();
+            var parsedCustom = MacroFileModel.ParseIni(customIni);
+            Assert(parsedCustom.Macros[0].Interrupt == 0 && parsedCustom.Macros[0].EndKeys == "2u|store % moveCursor,0" &&
+                   parsedCustom.Macros[0].Repeat == 1,
+                   "Custom macro serializes and parses Interrupt, EndKeys, and Repeat correctly");
+
             Log("=================================================");
             Log($"  TEST RESULTS: {passed} PASSED, {failed} FAILED");
             Log("=================================================");
