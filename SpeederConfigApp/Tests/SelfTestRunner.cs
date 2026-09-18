@@ -645,6 +645,53 @@ script=nextinifile.ini|5
             Assert(!string.IsNullOrEmpty(studioVm.StatusMessage),
                    "CopyReferenceSnippetCommand executes and updates StatusMessage without throwing");
 
+            // 5. Multi-Studio Integration Tests (Task 6)
+            Log("-------------------------------------------------");
+            Log("  MULTI-STUDIO & UI INTEGRATION TESTS");
+            Log("-------------------------------------------------");
+
+            studioVm = new MainViewModel();
+
+            // Tab switching
+            Assert(studioVm.ActiveTabIndex == 0, "Initial ActiveTabIndex is 0 (Config)");
+            studioVm.SwitchTabCommand.Execute("1");
+            Assert(studioVm.ActiveTabIndex == 1, "SwitchTabCommand switches ActiveTabIndex to 1 (Macro Studio)");
+            studioVm.SwitchTabCommand.Execute("2");
+            Assert(studioVm.ActiveTabIndex == 2, "SwitchTabCommand switches ActiveTabIndex to 2 (Waymark Studio)");
+            studioVm.SwitchTabCommand.Execute("3");
+            Assert(studioVm.ActiveTabIndex == 3, "SwitchTabCommand switches ActiveTabIndex to 3 (Reference)");
+            studioVm.SwitchTabCommand.Execute("0");
+            Assert(studioVm.ActiveTabIndex == 0, "SwitchTabCommand restores ActiveTabIndex to 0 (Config)");
+
+            // Clear reference search command
+            studioVm.SearchReferenceText = "custom_search_filter";
+            Assert(!string.IsNullOrEmpty(studioVm.SearchReferenceText), "SearchReferenceText set");
+            studioVm.ClearReferenceSearchCommand.Execute(null);
+            Assert(string.IsNullOrEmpty(studioVm.SearchReferenceText), "ClearReferenceSearchCommand resets SearchReferenceText to empty string");
+
+            // Studio live INI previews
+            Assert(!string.IsNullOrEmpty(studioVm.MacroIniPreview), "MacroIniPreview generates non-empty INI string");
+            Assert(studioVm.MacroIniPreview.Contains("[113]"), "MacroIniPreview contains default template section [113]");
+            Assert(!string.IsNullOrEmpty(studioVm.WaymarkIniPreview), "WaymarkIniPreview generates non-empty INI string");
+            Assert(studioVm.WaymarkIniPreview.Contains("[0]") && studioVm.WaymarkIniPreview.Contains("[unstick]"),
+                   "WaymarkIniPreview includes both waypoint [0] and [unstick] sections");
+
+            // AllKeysText multi-line sync
+            var testMacro = new MacroItem();
+            testMacro.AllKeysText = "s300\r\ntcg10,3\r\ncc1";
+            Assert(testMacro.KeysLines.Count == 3 && testMacro.KeysLines[0] == "s300" && testMacro.KeysLines[1] == "tcg10,3" && testMacro.KeysLines[2] == "cc1",
+                   "MacroItem.AllKeysText sets KeysLines accurately");
+            testMacro.KeysLines.Add("rs100,200");
+            Assert(testMacro.AllKeysText.Contains("rs100,200"), "Adding to KeysLines reflects in AllKeysText");
+
+            // Themes/ModernTheme explicit studio styles
+            var studioTabItemStyle = System.Windows.Application.Current?.FindResource("StudioTabItemStyle") as System.Windows.Style;
+            Assert(studioTabItemStyle != null, "Themes/ModernTheme defines StudioTabItemStyle");
+            var studioTabControlStyle = System.Windows.Application.Current?.FindResource("StudioTabControlStyle") as System.Windows.Style;
+            Assert(studioTabControlStyle != null, "Themes/ModernTheme defines StudioTabControlStyle");
+            var chipButtonStyle = System.Windows.Application.Current?.FindResource("ChipButtonStyle") as System.Windows.Style;
+            Assert(chipButtonStyle != null, "Themes/ModernTheme defines ChipButtonStyle");
+
             Log("=================================================");
             Log($"  TEST RESULTS: {passed} PASSED, {failed} FAILED");
             Log("=================================================");

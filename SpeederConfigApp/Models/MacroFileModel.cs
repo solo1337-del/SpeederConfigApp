@@ -26,6 +26,7 @@ namespace SpeederConfigApp.Models
             KeysLines.CollectionChanged += (s, e) =>
             {
                 OnPropertyChanged(nameof(KeysLines));
+                OnPropertyChanged(nameof(AllKeysText));
             };
         }
 
@@ -119,6 +120,26 @@ namespace SpeederConfigApp.Models
         }
 
         public ObservableCollection<string> KeysLines { get; } = new ObservableCollection<string>();
+
+        public string AllKeysText
+        {
+            get => string.Join(Environment.NewLine, KeysLines);
+            set
+            {
+                KeysLines.Clear();
+                if (!string.IsNullOrWhiteSpace(value))
+                {
+                    using var reader = new StringReader(value);
+                    string? line;
+                    while ((line = reader.ReadLine()) != null)
+                    {
+                        if (!string.IsNullOrWhiteSpace(line))
+                            KeysLines.Add(line.Trim());
+                    }
+                }
+                OnPropertyChanged();
+            }
+        }
 
         public string EndKeys
         {

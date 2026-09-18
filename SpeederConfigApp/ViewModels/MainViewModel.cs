@@ -208,11 +208,22 @@ namespace SpeederConfigApp.ViewModels
             }
         }
 
+        public string MacroIniPreview => _macroFile?.GenerateIni() ?? string.Empty;
+        public string WaymarkIniPreview => _waymarkFile?.GenerateIni() ?? string.Empty;
+
+        public void UpdateMacroPreview() => OnPropertyChanged(nameof(MacroIniPreview));
+        public void UpdateWaymarkPreview() => OnPropertyChanged(nameof(WaymarkIniPreview));
+
         public ObservableCollection<ConsoleCommandItem> FilteredConsoleCommands { get; } = new ObservableCollection<ConsoleCommandItem>();
         public ObservableCollection<MacroSyntaxItem> FilteredMacroCommands { get; } = new ObservableCollection<MacroSyntaxItem>();
         public ObservableCollection<VirtualKeyInfo> FilteredVirtualKeys { get; } = new ObservableCollection<VirtualKeyInfo>();
 
         #region Commands
+        // Navigation & General Commands
+        public RelayCommand SwitchTabCommand { get; }
+        public RelayCommand ClearReferenceSearchCommand { get; }
+        public RelayCommand CopyMacroIniCommand { get; }
+        public RelayCommand CopyWaymarkIniCommand { get; }
         // Config Tab Commands
         public RelayCommand NewConfigCommand { get; }
         public RelayCommand OpenConfigCommand { get; }
@@ -382,6 +393,43 @@ namespace SpeederConfigApp.ViewModels
 
             CopyReferenceSnippetCommand = new RelayCommand(ExecuteCopyReferenceSnippet);
             ApplyReferenceFilter();
+
+            SwitchTabCommand = new RelayCommand(p =>
+            {
+                if (int.TryParse(p?.ToString(), out int idx))
+                {
+                    ActiveTabIndex = idx;
+                }
+            });
+            ClearReferenceSearchCommand = new RelayCommand(() => SearchReferenceText = string.Empty);
+            CopyMacroIniCommand = new RelayCommand(() =>
+            {
+                try
+                {
+                    Clipboard.SetText(MacroIniPreview);
+                    StatusMessage = $"Copied {MacroFile.Macros.Count} macros to clipboard.";
+                    StatusIsError = false;
+                }
+                catch (Exception ex)
+                {
+                    StatusMessage = $"Clipboard error: {ex.Message}";
+                    StatusIsError = true;
+                }
+            });
+            CopyWaymarkIniCommand = new RelayCommand(() =>
+            {
+                try
+                {
+                    Clipboard.SetText(WaymarkIniPreview);
+                    StatusMessage = $"Copied {WaymarkFile.Points.Count} waypoints to clipboard.";
+                    StatusIsError = false;
+                }
+                catch (Exception ex)
+                {
+                    StatusMessage = $"Clipboard error: {ex.Message}";
+                    StatusIsError = true;
+                }
+            });
 
             UpdatePreview();
         }
@@ -772,6 +820,7 @@ namespace SpeederConfigApp.ViewModels
             SelectedMacro = newMacro;
             StatusMessage = "Added new macro.";
             StatusIsError = false;
+            UpdateMacroPreview();
         }
 
         private void ExecuteDeleteSelectedMacro()
@@ -784,6 +833,7 @@ namespace SpeederConfigApp.ViewModels
                 SelectedMacro = idx >= 0 ? MacroFile.Macros[idx] : null;
                 StatusMessage = "Deleted selected macro.";
                 StatusIsError = false;
+                UpdateMacroPreview();
             }
         }
 
@@ -801,6 +851,7 @@ namespace SpeederConfigApp.ViewModels
                 SelectedMacro = clone;
                 StatusMessage = $"Cloned macro [{clone.DisplayName}].";
                 StatusIsError = false;
+                UpdateMacroPreview();
             }
         }
 
@@ -812,6 +863,7 @@ namespace SpeederConfigApp.ViewModels
                 SelectedMacro.KeysLines.Add(line);
                 StatusMessage = "Added keys line to macro.";
                 StatusIsError = false;
+                UpdateMacroPreview();
             }
         }
 
@@ -833,6 +885,7 @@ namespace SpeederConfigApp.ViewModels
                 }
                 StatusMessage = "Removed keys line from macro.";
                 StatusIsError = false;
+                UpdateMacroPreview();
             }
         }
 
@@ -878,6 +931,7 @@ namespace SpeederConfigApp.ViewModels
                 StatusMessage = "Appended default macro templates.";
                 StatusIsError = false;
             }
+            UpdateMacroPreview();
         }
 
         private void ExecuteLinkMacroToConfig()
@@ -975,6 +1029,7 @@ namespace SpeederConfigApp.ViewModels
             SelectedWaymarkPoint = pt;
             StatusMessage = $"Added Waypoint [{pt.Index}].";
             StatusIsError = false;
+            UpdateWaymarkPreview();
         }
 
         private void ExecuteDeleteSelectedWaymarkPoint()
@@ -988,6 +1043,7 @@ namespace SpeederConfigApp.ViewModels
                 SelectedWaymarkPoint = idx >= 0 ? WaymarkFile.Points[idx] : null;
                 StatusMessage = "Deleted waypoint and re-indexed route.";
                 StatusIsError = false;
+                UpdateWaymarkPreview();
             }
         }
 
@@ -1002,6 +1058,7 @@ namespace SpeederConfigApp.ViewModels
                     WaymarkFile.ReindexPoints();
                     StatusMessage = $"Moved Waypoint to index [{SelectedWaymarkPoint.Index}].";
                     StatusIsError = false;
+                    UpdateWaymarkPreview();
                 }
             }
         }
@@ -1017,6 +1074,7 @@ namespace SpeederConfigApp.ViewModels
                     WaymarkFile.ReindexPoints();
                     StatusMessage = $"Moved Waypoint to index [{SelectedWaymarkPoint.Index}].";
                     StatusIsError = false;
+                    UpdateWaymarkPreview();
                 }
             }
         }
@@ -1030,6 +1088,7 @@ namespace SpeederConfigApp.ViewModels
                     ? $"Waypoint [{SelectedWaymarkPoint.Index}] set to Stop Movement (x=0.1)."
                     : $"Waypoint [{SelectedWaymarkPoint.Index}] restored to normal movement.";
                 StatusIsError = false;
+                UpdateWaymarkPreview();
             }
         }
 
@@ -1042,6 +1101,7 @@ namespace SpeederConfigApp.ViewModels
                     ? $"Waypoint [{SelectedWaymarkPoint.Index}] set to Seamless Movement (wait time=1)."
                     : $"Waypoint [{SelectedWaymarkPoint.Index}] restored to standard wait time (30ms).";
                 StatusIsError = false;
+                UpdateWaymarkPreview();
             }
         }
 
@@ -1052,6 +1112,7 @@ namespace SpeederConfigApp.ViewModels
             SelectedWaymarkVariable = newVar;
             StatusMessage = "Added route variable.";
             StatusIsError = false;
+            UpdateWaymarkPreview();
         }
 
         private void ExecuteRemoveVariable(object? parameter)
@@ -1063,6 +1124,7 @@ namespace SpeederConfigApp.ViewModels
                 SelectedWaymarkVariable = WaymarkFile.Variables.FirstOrDefault();
                 StatusMessage = "Removed route variable.";
                 StatusIsError = false;
+                UpdateWaymarkPreview();
             }
         }
         #endregion

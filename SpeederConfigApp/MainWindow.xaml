@@ -92,16 +92,19 @@
             </Grid>
         </Border>
 
-        <!-- MAIN SPLIT CONTENT -->
-        <Grid Grid.Row="2">
-            <Grid.ColumnDefinitions>
-                <!-- Editor Columns -->
-                <ColumnDefinition Width="3*" MinWidth="550" />
-                <!-- Splitter -->
-                <ColumnDefinition Width="6" />
-                <!-- Preview & Inspection Column -->
-                <ColumnDefinition Width="2*" MinWidth="320" />
-            </Grid.ColumnDefinitions>
+        <!-- MAIN STUDIO TAB CONTROL -->
+        <TabControl Grid.Row="2" SelectedIndex="{Binding ActiveTabIndex, Mode=TwoWay}" Style="{StaticResource StudioTabControlStyle}">
+            <!-- ==================== TAB 0: CONFIG (55 LINES) ==================== -->
+            <TabItem Header="⚙️ Config (55 Lines)" Style="{StaticResource StudioTabItemStyle}">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <!-- Editor Columns -->
+                        <ColumnDefinition Width="3*" MinWidth="550" />
+                        <!-- Splitter -->
+                        <ColumnDefinition Width="6" />
+                        <!-- Preview & Inspection Column -->
+                        <ColumnDefinition Width="2*" MinWidth="320" />
+                    </Grid.ColumnDefinitions>
 
             <!-- LEFT: Categorized Settings Navigation Tabs -->
             <Border Grid.Column="0" Margin="12">
@@ -151,7 +154,7 @@
                                     <Grid>
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="*" />
-                                            <ColumnDefinition Width="240" />
+                                            <ColumnDefinition Width="280" />
                                         </Grid.ColumnDefinitions>
                                         <StackPanel VerticalAlignment="Center" Margin="0,0,12,0">
                                             <StackPanel Orientation="Horizontal">
@@ -160,7 +163,14 @@
                                             </StackPanel>
                                             <TextBlock Text="Name of the .ini macro file located in the same directory as config.txt." Style="{StaticResource SettingDesc}" />
                                         </StackPanel>
-                                        <TextBox Grid.Column="1" Text="{Binding Settings.MacroFileName, UpdateSourceTrigger=PropertyChanged}" ToolTip="Name of the .ini macro file located in the same directory as config.txt." />
+                                        <Grid Grid.Column="1">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+                                            <TextBox Text="{Binding Settings.MacroFileName, UpdateSourceTrigger=PropertyChanged}" ToolTip="Name of the .ini macro file located in the same directory as config.txt." />
+                                            <Button Grid.Column="1" Content="🎯 Macro Studio" Command="{Binding SwitchTabCommand}" CommandParameter="1" Style="{StaticResource AccentButtonStyle}" Margin="6,0,0,0" Padding="8,4" FontSize="11.5" ToolTip="Switch directly to Macro Studio tab to visually edit this macro file" />
+                                        </Grid>
                                     </Grid>
                                 </Border>
 
@@ -1510,5 +1520,911 @@
                 </Grid>
             </Border>
         </Grid>
+    </TabItem>
+
+            <!-- ==================== TAB 1: MACRO STUDIO (.INI) ==================== -->
+            <TabItem Header="🎯 Macro Studio (.ini)" Style="{StaticResource StudioTabItemStyle}">
+                <Grid Background="{StaticResource BgBrush}">
+                    <Grid.RowDefinitions>
+                        <!-- Macro Studio Top Toolbar -->
+                        <RowDefinition Height="Auto" />
+                        <!-- Main Split Editor -->
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+
+                    <!-- Top Toolbar -->
+                    <Border Grid.Row="0" Background="{StaticResource SurfaceBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,0,0,1" Padding="16,8">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+
+                            <!-- File Info Badge -->
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <Border Background="#1e293b" BorderBrush="{StaticResource AccentBrush}" BorderThickness="1" CornerRadius="4" Padding="8,3" Margin="0,0,10,0">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="Macro File: " FontSize="11.5" Foreground="{StaticResource TextSecondaryBrush}" />
+                                        <TextBlock Text="{Binding MacroFile.FileName}" FontSize="11.5" FontWeight="Bold" Foreground="{StaticResource AccentBrush}" />
+                                    </StackPanel>
+                                </Border>
+                                <Border Background="#1e293b" CornerRadius="4" Padding="6,3" Margin="0,0,10,0" VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding MacroFile.Macros.Count, StringFormat='{}{0} Macros Loaded'}" FontSize="11" Foreground="{StaticResource SuccessBrush}" FontWeight="SemiBold" />
+                                </Border>
+                                <TextBlock Text="{Binding MacroFile.FilePath, StringFormat='Path: {0}'}" FontSize="11" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" MaxWidth="350" />
+                            </StackPanel>
+
+                            <!-- Actions -->
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                <Button Content="📄 New Macro File" Command="{Binding NewMacroFileCommand}" Margin="0,0,8,0" ToolTip="Create new macro file with 8 default templates" />
+                                <Button Content="📂 Open .ini" Command="{Binding OpenMacroFileCommand}" Margin="0,0,8,0" ToolTip="Open and parse an existing macro INI file" />
+                                <Button Content="💾 Save" Command="{Binding SaveMacroFileCommand}" Style="{StaticResource AccentButtonStyle}" Margin="0,0,8,0" ToolTip="Save current macros to INI file" />
+                                <Button Content="💾 Save As..." Command="{Binding SaveAsMacroFileCommand}" Margin="0,0,8,0" ToolTip="Save macros to a new file" />
+                                <Button Content="🔗 Set as Line 29 in Config" Command="{Binding LinkMacroToConfigCommand}" ToolTip="Set this file as Macro File Name in Config Line 29" />
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+
+                    <!-- Main Split Editor -->
+                    <Grid Grid.Row="1">
+                        <Grid.ColumnDefinitions>
+                            <!-- Left: Macros List -->
+                            <ColumnDefinition Width="380" MinWidth="300" />
+                            <!-- Splitter -->
+                            <ColumnDefinition Width="6" />
+                            <!-- Right: Macro Details & Action Steps -->
+                            <ColumnDefinition Width="*" MinWidth="450" />
+                        </Grid.ColumnDefinitions>
+
+                        <!-- LEFT: Macro List -->
+                        <Border Grid.Column="0" Background="{StaticResource SurfaceBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,0,1,0" Padding="12">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <!-- List Header & Actions -->
+                                    <RowDefinition Height="Auto" />
+                                    <!-- Templates Bar -->
+                                    <RowDefinition Height="Auto" />
+                                    <!-- Macros ListBox -->
+                                    <RowDefinition Height="*" />
+                                </Grid.RowDefinitions>
+
+                                <!-- Header & CRUD Buttons -->
+                                <Grid Grid.Row="0" Margin="0,0,0,8">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+
+                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                        <TextBlock Text="Macros &amp; Functions" FontSize="14" FontWeight="Bold" Foreground="{StaticResource TextPrimaryBrush}" />
+                                        <Border Background="#1e293b" CornerRadius="10" Padding="6,1" Margin="8,0,0,0" VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding MacroFile.Macros.Count}" FontSize="11" FontWeight="Bold" Foreground="{StaticResource AccentBrush}" />
+                                        </Border>
+                                    </StackPanel>
+
+                                    <StackPanel Grid.Column="1" Orientation="Horizontal">
+                                        <Button Content="➕ Add" Command="{Binding AddMacroCommand}" Padding="8,4" FontSize="11.5" Margin="0,0,4,0" ToolTip="Add new custom macro" />
+                                        <Button Content="📋 Clone" Command="{Binding CloneSelectedMacroCommand}" Padding="8,4" FontSize="11.5" Margin="0,0,4,0" ToolTip="Duplicate selected macro" />
+                                        <Button Content="🗑️" Command="{Binding DeleteSelectedMacroCommand}" Style="{StaticResource DangerButtonStyle}" Padding="8,4" FontSize="11.5" ToolTip="Delete selected macro" />
+                                    </StackPanel>
+                                </Grid>
+
+                                <!-- Pre-built Templates Quick Bar -->
+                                <Border Grid.Row="1" Background="{StaticResource CardBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" CornerRadius="6" Padding="8,6" Margin="0,0,0,10">
+                                    <StackPanel>
+                                        <TextBlock Text="⚡ Pre-Built Templates:" FontSize="10.5" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,4" />
+                                        <WrapPanel>
+                                            <Button Content="⚔️ Combat" Command="{Binding ApplyMacroTemplateCommand}" CommandParameter="combat" Style="{StaticResource ChipButtonStyle}" Margin="0,0,4,2" Padding="6,2" FontSize="11" ToolTip="F2 Combat Cooldown Rotation" />
+                                            <Button Content="🎯 Target Lock" Command="{Binding ApplyMacroTemplateCommand}" CommandParameter="target" Style="{StaticResource ChipButtonStyle}" Margin="0,0,4,2" Padding="6,2" FontSize="11" ToolTip="F3 Target Lock with lt-" />
+                                            <Button Content="⛏️ Gathering" Command="{Binding ApplyMacroTemplateCommand}" CommandParameter="gather" Style="{StaticResource ChipButtonStyle}" Margin="0,0,4,2" Padding="6,2" FontSize="11" ToolTip="F6 Continuous Rock Gathering" />
+                                            <Button Content="⏩ Speed" Command="{Binding ApplyMacroTemplateCommand}" CommandParameter="speed" Style="{StaticResource ChipButtonStyle}" Margin="0,0,4,2" Padding="6,2" FontSize="11" ToolTip="Speed Multiplier Adjuster" />
+                                        </WrapPanel>
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- Macro ListBox -->
+                                <ListBox Grid.Row="2"
+                                         ItemsSource="{Binding MacroFile.Macros}"
+                                         SelectedItem="{Binding SelectedMacro, Mode=TwoWay}"
+                                         Background="{StaticResource BgBrush}"
+                                         BorderBrush="{StaticResource BorderBrush}"
+                                         BorderThickness="1"
+                                         ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                                         ScrollViewer.VerticalScrollBarVisibility="Auto">
+                                    <ListBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border Padding="8,6" Margin="0,1" CornerRadius="4">
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="*" />
+                                                        <ColumnDefinition Width="Auto" />
+                                                    </Grid.ColumnDefinitions>
+                                                    <StackPanel VerticalAlignment="Center">
+                                                        <StackPanel Orientation="Horizontal">
+                                                            <!-- Function Badge -->
+                                                            <Border Background="#3b0764" BorderBrush="#a855f7" BorderThickness="1" CornerRadius="3" Padding="4,1" Margin="0,0,6,0"
+                                                                    Visibility="{Binding IsFunction, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                                                <TextBlock Text="FUNC" FontSize="9.5" FontWeight="Bold" Foreground="#d8b4fe" />
+                                                            </Border>
+                                                            <!-- Key Badge -->
+                                                            <Border Background="#1e293b" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" CornerRadius="3" Padding="4,1" Margin="0,0,6,0"
+                                                                    Visibility="{Binding IsFunction, Converter={StaticResource InverseBooleanToVisibilityConverter}}">
+                                                                <TextBlock Text="{Binding SectionHeader, StringFormat='[{0}]'}" FontSize="10" FontWeight="Bold" Foreground="{StaticResource AccentBrush}" FontFamily="Consolas" />
+                                                            </Border>
+                                                            <TextBlock Text="{Binding DisplayName}" FontWeight="SemiBold" FontSize="12" Foreground="{StaticResource TextPrimaryBrush}" TextTrimming="CharacterEllipsis" MaxWidth="220" />
+                                                        </StackPanel>
+                                                        <TextBlock Text="{Binding Description}" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" TextTrimming="CharacterEllipsis" Margin="0,2,0,0" MaxWidth="240" />
+                                                    </StackPanel>
+
+                                                    <!-- Repeat Mode & Steps Badge -->
+                                                    <StackPanel Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center">
+                                                        <Border Background="#1e293b" CornerRadius="3" Padding="4,1" Margin="0,0,0,2">
+                                                            <TextBlock Text="{Binding KeysLines.Count, StringFormat='{}{0} steps'}" FontSize="10" Foreground="{StaticResource TextMutedBrush}" HorizontalAlignment="Right" />
+                                                        </Border>
+                                                    </StackPanel>
+                                                </Grid>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ListBox.ItemTemplate>
+                                </ListBox>
+                            </Grid>
+                        </Border>
+
+                        <!-- GridSplitter -->
+                        <GridSplitter Grid.Column="1" Width="6" HorizontalAlignment="Stretch" Background="{StaticResource BorderBrush}" />
+
+                        <!-- RIGHT: Macro Details & Keys Editor -->
+                        <ScrollViewer Grid.Column="2" VerticalScrollBarVisibility="Auto" Padding="14">
+                            <StackPanel>
+                                <!-- Card 1: Macro Identity -->
+                                <Border Style="{StaticResource SettingCard}">
+                                    <StackPanel>
+                                        <TextBlock Text="Macro Identity &amp; Trigger" Style="{StaticResource SectionHeader}" />
+                                        
+                                        <!-- Is Function Toggle -->
+                                        <CheckBox Content="Is Reusable Function ([fName])" IsChecked="{Binding SelectedMacro.IsFunction}" Margin="0,0,0,10" FontWeight="SemiBold" />
+
+                                        <Grid Margin="0,0,0,10">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="*" />
+                                            </Grid.ColumnDefinitions>
+
+                                            <!-- Trigger Key (If Not Function) -->
+                                            <StackPanel Visibility="{Binding SelectedMacro.IsFunction, Converter={StaticResource InverseBooleanToVisibilityConverter}}" Margin="0,0,10,0">
+                                                <TextBlock Text="Trigger Key:" Style="{StaticResource SettingTitle}" Margin="0,0,0,4" />
+                                                <controls:KeyPickerControl KeyCode="{Binding SelectedMacro.TriggerKey, Mode=TwoWay}" />
+                                            </StackPanel>
+
+                                            <!-- Function Name (If Function) -->
+                                            <StackPanel Visibility="{Binding SelectedMacro.IsFunction, Converter={StaticResource BooleanToVisibilityConverter}}" Margin="0,0,10,0">
+                                                <TextBlock Text="Function Identifier (starts with 'f'):" Style="{StaticResource SettingTitle}" Margin="0,0,0,4" />
+                                                <TextBox Text="{Binding SelectedMacro.FunctionName, UpdateSourceTrigger=PropertyChanged}" />
+                                            </StackPanel>
+
+                                            <!-- Section Header Output Preview -->
+                                            <StackPanel Grid.Column="1">
+                                                <TextBlock Text="INI Section Header:" Style="{StaticResource SettingTitle}" Margin="0,0,0,4" />
+                                                <TextBox Text="{Binding SelectedMacro.SectionHeader, Mode=OneWay, StringFormat='[{0}]'}" IsReadOnly="True" Background="#0c121e" Foreground="{StaticResource AccentBrush}" FontWeight="Bold" FontFamily="Consolas" />
+                                            </StackPanel>
+                                        </Grid>
+
+                                        <!-- Description -->
+                                        <TextBlock Text="Description &amp; Comments:" Style="{StaticResource SettingTitle}" Margin="0,0,0,4" />
+                                        <TextBox Text="{Binding SelectedMacro.Description, UpdateSourceTrigger=PropertyChanged}" AcceptsReturn="True" Height="50" TextWrapping="Wrap" />
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- Card 2: Execution Settings -->
+                                <Border Style="{StaticResource SettingCard}">
+                                    <StackPanel>
+                                        <TextBlock Text="Execution &amp; Trigger Settings" Style="{StaticResource SectionHeader}" />
+
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="*" />
+                                            </Grid.ColumnDefinitions>
+
+                                            <!-- Repeat Mode -->
+                                            <StackPanel Margin="0,0,8,0">
+                                                <TextBlock Text="Repeat Mode:" Style="{StaticResource SettingTitle}" Margin="0,0,0,4" />
+                                                <ComboBox SelectedIndex="{Binding SelectedMacro.Repeat, Mode=TwoWay}">
+                                                    <ComboBoxItem Content="0 - Execute Once [Once]" />
+                                                    <ComboBoxItem Content="1 - While Held [Hold]" />
+                                                    <ComboBoxItem Content="2 - Continuous Loop [Loop]" />
+                                                </ComboBox>
+                                            </StackPanel>
+
+                                            <!-- Interrupt -->
+                                            <StackPanel Grid.Column="1" Margin="4,0,4,0">
+                                                <TextBlock Text="Interrupt (0, 1, or None):" Style="{StaticResource SettingTitle}" Margin="0,0,0,4" />
+                                                <TextBox Text="{Binding SelectedMacro.Interrupt, UpdateSourceTrigger=PropertyChanged, TargetNullValue=''}" ToolTip="Leave blank for None, 0 for off, 1 for on" />
+                                            </StackPanel>
+
+                                            <!-- EndKeys -->
+                                            <StackPanel Grid.Column="2" Margin="8,0,0,0">
+                                                <TextBlock Text="EndKeys (Cleanup):" Style="{StaticResource SettingTitle}" Margin="0,0,0,4" />
+                                                <TextBox Text="{Binding SelectedMacro.EndKeys, UpdateSourceTrigger=PropertyChanged}" ToolTip="Keys/commands executed when macro ends (e.g. lt- or m(VAR % CX),(VAR % CY))" />
+                                            </StackPanel>
+                                        </Grid>
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- Card 3: Action Steps -->
+                                <Border Style="{StaticResource SettingCard}">
+                                    <StackPanel>
+                                        <Grid Margin="0,0,0,10">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+                                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                                <TextBlock Text="Action Steps (keys, keys2, keys3, ...)" Style="{StaticResource SectionHeader}" Margin="0" />
+                                                <Border Background="#1e293b" CornerRadius="10" Padding="6,1" Margin="8,0,0,0" VerticalAlignment="Center">
+                                                    <TextBlock Text="{Binding SelectedMacro.KeysLines.Count}" FontSize="11" FontWeight="Bold" Foreground="{StaticResource AccentBrush}" />
+                                                </Border>
+                                            </StackPanel>
+                                        </Grid>
+
+                                        <!-- Add New Step Input Bar -->
+                                        <Grid Margin="0,0,0,10">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+                                            <TextBox x:Name="NewStepTextBox" Text="s300" Margin="0,0,8,0" FontFamily="Consolas" FontSize="13" />
+                                            <Button Grid.Column="1" Content="➕ Add Action Step" Command="{Binding AddKeysLineCommand}" CommandParameter="{Binding Text, ElementName=NewStepTextBox}" Style="{StaticResource AccentButtonStyle}" />
+                                        </Grid>
+
+                                        <!-- Quick Syntax Helper Chips -->
+                                        <TextBlock Text="⚡ Quick Syntax Chips (Click to Append Step):" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,6" />
+                                        <WrapPanel Margin="0,0,0,10">
+                                            <Button Content="s300 (Sleep 300ms)" Command="{Binding AddKeysLineCommand}" CommandParameter="s300" Style="{StaticResource ChipButtonStyle}" />
+                                            <Button Content="rs150,200 (Random Sleep)" Command="{Binding AddKeysLineCommand}" CommandParameter="rs150,200" Style="{StaticResource ChipButtonStyle}" />
+                                            <Button Content="tcg10,3 (Target Node)" Command="{Binding AddKeysLineCommand}" CommandParameter="tcg10,3" Style="{StaticResource ChipButtonStyle}" />
+                                            <Button Content="tcp*50,0,1 (Target Player)" Command="{Binding AddKeysLineCommand}" CommandParameter="tcp*50,0,1" Style="{StaticResource ChipButtonStyle}" />
+                                            <Button Content="cc1 (Check Cooldown 1)" Command="{Binding AddKeysLineCommand}" CommandParameter="cc1" Style="{StaticResource ChipButtonStyle}" />
+                                            <Button Content="dbg % Active (Log Debug)" Command="{Binding AddKeysLineCommand}" CommandParameter="dbg % Macro Active" Style="{StaticResource ChipButtonStyle}" />
+                                            <Button Content="(VAR % CX) (Restore Mouse)" Command="{Binding AddKeysLineCommand}" CommandParameter="m(VAR % CX),(VAR % CY)" Style="{StaticResource ChipButtonStyle}" />
+                                            <Button Content="lt- (Release Lock Target)" Command="{Binding AddKeysLineCommand}" CommandParameter="lt-" Style="{StaticResource ChipButtonStyle}" />
+                                            <Button Content="!cm|gt8 (Cast + Gather)" Command="{Binding AddKeysLineCommand}" CommandParameter="!cm|gt8" Style="{StaticResource ChipButtonStyle}" />
+                                        </WrapPanel>
+
+                                        <!-- Steps List -->
+                                        <ItemsControl ItemsSource="{Binding SelectedMacro.KeysLines}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <Border Background="{StaticResource BgBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" CornerRadius="6" Padding="8,4" Margin="0,0,0,4">
+                                                        <Grid>
+                                                            <Grid.ColumnDefinitions>
+                                                                <ColumnDefinition Width="Auto" />
+                                                                <ColumnDefinition Width="*" />
+                                                                <ColumnDefinition Width="Auto" />
+                                                            </Grid.ColumnDefinitions>
+                                                            <!-- Step label -->
+                                                            <Border Background="#1e293b" CornerRadius="4" Padding="6,1" Margin="0,0,8,0" VerticalAlignment="Center">
+                                                                <TextBlock Text="keys=" FontFamily="Consolas" FontSize="11" FontWeight="Bold" Foreground="{StaticResource AccentBrush}" />
+                                                            </Border>
+                                                            <!-- Step content -->
+                                                            <TextBox Grid.Column="1" Text="{Binding Mode=OneWay}" IsReadOnly="True" Background="Transparent" Foreground="#f8fafc" BorderThickness="0" FontFamily="Consolas" FontSize="12.5" VerticalAlignment="Center" />
+                                                            <!-- Remove button -->
+                                                            <Button Grid.Column="2" Content="❌" Command="{Binding DataContext.RemoveKeysLineCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}" Style="{StaticResource DangerButtonStyle}" Padding="6,2" FontSize="10" Margin="6,0,0,0" ToolTip="Remove this action step" />
+                                                        </Grid>
+                                                    </Border>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+
+                                        <!-- Raw Multi-line Editor Expander -->
+                                        <Expander Header="✏️ Raw Multi-line Steps Editor (Batch Edit All Lines)" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,8,0,0">
+                                            <StackPanel Margin="0,6,0,0">
+                                                <TextBlock Text="Edit all action steps directly (one command per line):" FontSize="11" Foreground="{StaticResource TextMutedBrush}" Margin="0,0,0,4" />
+                                                <TextBox Text="{Binding SelectedMacro.AllKeysText, UpdateSourceTrigger=PropertyChanged}" AcceptsReturn="True" Height="100" FontFamily="Consolas" FontSize="12" Background="#0c121e" Foreground="#38bdf8" Padding="8" />
+                                            </StackPanel>
+                                        </Expander>
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- Card 4: Live INI Preview -->
+                                <Border Style="{StaticResource SettingCard}">
+                                    <StackPanel>
+                                        <Grid Margin="0,0,0,8">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+                                            <StackPanel VerticalAlignment="Center">
+                                                <TextBlock Text="Live Macro .ini Preview" Style="{StaticResource SectionHeader}" Margin="0" />
+                                                <TextBlock Text="Real-time generated output for the active macro file" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" />
+                                            </StackPanel>
+                                            <Button Grid.Column="1" Content="📋 Copy Macro INI" Command="{Binding CopyMacroIniCommand}" />
+                                        </Grid>
+                                        <TextBox Text="{Binding MacroIniPreview, Mode=OneWay}"
+                                                 IsReadOnly="True"
+                                                 FontFamily="Consolas"
+                                                 FontSize="11.5"
+                                                 Background="#0c121e"
+                                                 Foreground="#a5b4fc"
+                                                 BorderThickness="0"
+                                                 AcceptsReturn="True"
+                                                 VerticalScrollBarVisibility="Auto"
+                                                 HorizontalScrollBarVisibility="Auto"
+                                                 Height="140"
+                                                 Padding="8" />
+                                    </StackPanel>
+                                </Border>
+                            </StackPanel>
+                        </ScrollViewer>
+                    </Grid>
+                </Grid>
+            </TabItem>
+
+            <!-- ==================== TAB 2: WAYMARK STUDIO (.INI) ==================== -->
+            <TabItem Header="🗺️ Waymark Studio (.ini)" Style="{StaticResource StudioTabItemStyle}">
+                <Grid Background="{StaticResource BgBrush}">
+                    <Grid.RowDefinitions>
+                        <!-- Top Toolbar -->
+                        <RowDefinition Height="Auto" />
+                        <!-- Main Split Editor -->
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+
+                    <!-- Top Toolbar -->
+                    <Border Grid.Row="0" Background="{StaticResource SurfaceBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,0,0,1" Padding="16,8">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+
+                            <!-- File Info Badges -->
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <Border Background="#1e293b" BorderBrush="{StaticResource AccentBrush}" BorderThickness="1" CornerRadius="4" Padding="8,3" Margin="0,0,10,0">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="Waymark File: " FontSize="11.5" Foreground="{StaticResource TextSecondaryBrush}" />
+                                        <TextBlock Text="{Binding WaymarkFile.FileName}" FontSize="11.5" FontWeight="Bold" Foreground="{StaticResource AccentBrush}" />
+                                    </StackPanel>
+                                </Border>
+                                <Border Background="#1e293b" CornerRadius="4" Padding="6,3" Margin="0,0,10,0" VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding WaymarkFile.Points.Count, StringFormat='{}{0} Waypoints'}" FontSize="11" Foreground="{StaticResource SuccessBrush}" FontWeight="SemiBold" />
+                                </Border>
+                                <Border CornerRadius="4" Padding="6,3" Margin="0,0,10,0" VerticalAlignment="Center">
+                                    <Border.Style>
+                                        <Style TargetType="Border">
+                                            <Setter Property="Background" Value="#14532d" />
+                                            <Setter Property="BorderBrush" Value="#22c55e" />
+                                            <Setter Property="BorderThickness" Value="1" />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding WaymarkFile.Unstick.Enabled}" Value="False">
+                                                    <Setter Property="Background" Value="#1e293b" />
+                                                    <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Border.Style>
+                                    <TextBlock FontSize="11" FontWeight="SemiBold">
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="Text" Value="🛡️ Unstick: Active" />
+                                                <Setter Property="Foreground" Value="#86efac" />
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding WaymarkFile.Unstick.Enabled}" Value="False">
+                                                        <Setter Property="Text" Value="🛡️ Unstick: Disabled" />
+                                                        <Setter Property="Foreground" Value="{StaticResource TextMutedBrush}" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
+                                </Border>
+                                <TextBlock Text="{Binding WaymarkFile.FilePath, StringFormat='Path: {0}'}" FontSize="11" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" MaxWidth="300" />
+                            </StackPanel>
+
+                            <!-- Actions -->
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                <Button Content="📄 New Waymark File" Command="{Binding NewWaymarkFileCommand}" Margin="0,0,8,0" ToolTip="Create new route with sample waypoints" />
+                                <Button Content="📂 Open .ini" Command="{Binding OpenWaymarkFileCommand}" Margin="0,0,8,0" ToolTip="Open existing waymark route INI" />
+                                <Button Content="💾 Save" Command="{Binding SaveWaymarkFileCommand}" Style="{StaticResource AccentButtonStyle}" Margin="0,0,8,0" ToolTip="Save waymark route" />
+                                <Button Content="💾 Save As..." Command="{Binding SaveAsWaymarkFileCommand}" Margin="0,0,8,0" ToolTip="Save route to new file" />
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+
+                    <!-- Main Content -->
+                    <Grid Grid.Row="1">
+                        <Grid.ColumnDefinitions>
+                            <!-- Left: Waypoints List & Editor -->
+                            <ColumnDefinition Width="3*" MinWidth="520" />
+                            <!-- Splitter -->
+                            <ColumnDefinition Width="6" />
+                            <!-- Right: Unstick & Variables Sidebar -->
+                            <ColumnDefinition Width="2*" MinWidth="340" />
+                        </Grid.ColumnDefinitions>
+
+                        <!-- LEFT: Waypoints Table & Controls -->
+                        <Border Grid.Column="0" Background="{StaticResource SurfaceBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,0,1,0" Padding="12">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <!-- Waypoints Toolbar -->
+                                    <RowDefinition Height="Auto" />
+                                    <!-- DataGrid -->
+                                    <RowDefinition Height="*" />
+                                </Grid.RowDefinitions>
+
+                                <!-- Waypoint Toolbar -->
+                                <Border Grid.Row="0" Background="{StaticResource CardBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" CornerRadius="6" Padding="10,6" Margin="0,0,0,10">
+                                    <WrapPanel VerticalAlignment="Center">
+                                        <Button Content="➕ Add Waypoint" Command="{Binding AddWaymarkPointCommand}" Style="{StaticResource AccentButtonStyle}" Margin="0,0,6,0" Padding="10,5" ToolTip="Add sequential waypoint" />
+                                        <Button Content="🗑️ Delete" Command="{Binding DeleteSelectedWaymarkPointCommand}" Style="{StaticResource DangerButtonStyle}" Margin="0,0,6,0" Padding="10,5" ToolTip="Delete selected waypoint" />
+                                        <Button Content="⬆️ Move Up" Command="{Binding MoveWaymarkUpCommand}" Margin="0,0,6,0" Padding="10,5" ToolTip="Move waypoint earlier in route" />
+                                        <Button Content="⬇️ Move Down" Command="{Binding MoveWaymarkDownCommand}" Margin="0,0,12,0" Padding="10,5" ToolTip="Move waypoint later in route" />
+                                        <Button Content="🛑 Toggle Stop (0.1)" Command="{Binding ToggleStopMovementCommand}" Margin="0,0,6,0" Padding="10,5" ToolTip="Toggle x=0.1 to stop Speeder bot movement" />
+                                        <Button Content="⚡ Toggle Seamless (1ms)" Command="{Binding ToggleSeamlessMovementCommand}" Padding="10,5" ToolTip="Toggle wait time=1 for continuous smooth running" />
+                                    </WrapPanel>
+                                </Border>
+
+                                <!-- Waypoints DataGrid -->
+                                <DataGrid Grid.Row="1"
+                                          ItemsSource="{Binding WaymarkFile.Points}"
+                                          SelectedItem="{Binding SelectedWaymarkPoint, Mode=TwoWay}"
+                                          AutoGenerateColumns="False"
+                                          CanUserAddRows="False"
+                                          CanUserDeleteRows="False"
+                                          SelectionMode="Single"
+                                          BorderThickness="1"
+                                          BorderBrush="{StaticResource BorderBrush}"
+                                          RowHeight="36">
+                                    <DataGrid.Columns>
+                                        <!-- Index -->
+                                        <DataGridTextColumn Header="#" Binding="{Binding Index}" Width="45" IsReadOnly="True">
+                                            <DataGridTextColumn.ElementStyle>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="FontWeight" Value="Bold" />
+                                                    <Setter Property="Foreground" Value="{StaticResource AccentBrush}" />
+                                                    <Setter Property="HorizontalAlignment" Value="Center" />
+                                                    <Setter Property="VerticalAlignment" Value="Center" />
+                                                    <Setter Property="FontFamily" Value="Consolas" />
+                                                </Style>
+                                            </DataGridTextColumn.ElementStyle>
+                                        </DataGridTextColumn>
+
+                                        <!-- X Coordinate -->
+                                        <DataGridTemplateColumn Header="X (East/West)" Width="120">
+                                            <DataGridTemplateColumn.CellTemplate>
+                                                <DataTemplate>
+                                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                                        <TextBlock Text="{Binding X, StringFormat='{}{0:F2}'}" FontFamily="Consolas" VerticalAlignment="Center" />
+                                                        <!-- Stop movement pill -->
+                                                        <Border Background="#450a0a" BorderBrush="#ef4444" BorderThickness="1" CornerRadius="3" Padding="4,1" Margin="6,0,0,0"
+                                                                Visibility="{Binding IsStopMovement, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                                            <TextBlock Text="🛑 STOP" FontSize="9" FontWeight="Bold" Foreground="#f87171" />
+                                                        </Border>
+                                                    </StackPanel>
+                                                </DataTemplate>
+                                            </DataGridTemplateColumn.CellTemplate>
+                                            <DataGridTemplateColumn.CellEditingTemplate>
+                                                <DataTemplate>
+                                                    <TextBox Text="{Binding X, UpdateSourceTrigger=LostFocus}" FontFamily="Consolas" />
+                                                </DataTemplate>
+                                            </DataGridTemplateColumn.CellEditingTemplate>
+                                        </DataGridTemplateColumn>
+
+                                        <!-- Y Coordinate -->
+                                        <DataGridTextColumn Header="Y (Height)" Binding="{Binding Y, StringFormat='{}{0:F2}'}" Width="85" />
+
+                                        <!-- Z Coordinate -->
+                                        <DataGridTextColumn Header="Z (North/South)" Binding="{Binding Z, StringFormat='{}{0:F2}'}" Width="110" />
+
+                                        <!-- Wait Time ms -->
+                                        <DataGridTemplateColumn Header="Wait Time (ms)" Width="130">
+                                            <DataGridTemplateColumn.CellTemplate>
+                                                <DataTemplate>
+                                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                                        <TextBlock Text="{Binding WaitTime}" FontFamily="Consolas" VerticalAlignment="Center" />
+                                                        <!-- Seamless movement pill -->
+                                                        <Border Background="#451a03" BorderBrush="#f59e0b" BorderThickness="1" CornerRadius="3" Padding="4,1" Margin="6,0,0,0"
+                                                                Visibility="{Binding IsSeamlessMovement, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                                            <TextBlock Text="⚡ 1ms" FontSize="9" FontWeight="Bold" Foreground="#fbbf24" />
+                                                        </Border>
+                                                    </StackPanel>
+                                                </DataTemplate>
+                                            </DataGridTemplateColumn.CellTemplate>
+                                            <DataGridTemplateColumn.CellEditingTemplate>
+                                                <DataTemplate>
+                                                    <TextBox Text="{Binding WaitTime, UpdateSourceTrigger=LostFocus}" FontFamily="Consolas" />
+                                                </DataTemplate>
+                                            </DataGridTemplateColumn.CellEditingTemplate>
+                                        </DataGridTemplateColumn>
+
+                                        <!-- Keys / Commands -->
+                                        <DataGridTextColumn Header="Keys / Commands" Binding="{Binding Keys, UpdateSourceTrigger=LostFocus}" Width="1.5*" />
+
+                                        <!-- Script / Chaining -->
+                                        <DataGridTextColumn Header="Script / Chaining" Binding="{Binding Script, UpdateSourceTrigger=LostFocus}" Width="1*" />
+                                    </DataGrid.Columns>
+                                </DataGrid>
+                            </Grid>
+                        </Border>
+
+                        <!-- GridSplitter -->
+                        <GridSplitter Grid.Column="1" Width="6" HorizontalAlignment="Stretch" Background="{StaticResource BorderBrush}" />
+
+                        <!-- RIGHT: Unstick Failsafe, Variables & INI Preview -->
+                        <ScrollViewer Grid.Column="2" VerticalScrollBarVisibility="Auto" Padding="14">
+                            <StackPanel>
+                                <!-- Card 1: [unstick] Failsafe -->
+                                <Border Style="{StaticResource SettingCard}">
+                                    <StackPanel>
+                                        <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                            <TextBlock Text="[unstick] Failsafe Mechanics" Style="{StaticResource SectionHeader}" Margin="0" />
+                                        </StackPanel>
+                                        <TextBlock Text="Automatic stuck-detection and recovery sequence if character movement halts." Style="{StaticResource SettingDesc}" />
+
+                                        <!-- Enabled CheckBox -->
+                                        <CheckBox Content="Enable Unstick Recovery System" IsChecked="{Binding WaymarkFile.Unstick.Enabled}" Margin="0,4,0,10" FontWeight="Bold" />
+
+                                        <!-- Unstick Numeric Fields Grid -->
+                                        <Grid Margin="0,0,0,8">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="*" />
+                                            </Grid.ColumnDefinitions>
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition Height="Auto" />
+                                                <RowDefinition Height="Auto" />
+                                            </Grid.RowDefinitions>
+
+                                            <!-- Distance -->
+                                            <StackPanel Grid.Row="0" Grid.Column="0" Margin="0,0,6,8">
+                                                <TextBlock Text="Min Distance moved:" Style="{StaticResource SettingTitle}" FontSize="12" Margin="0,0,0,2" />
+                                                <TextBox Text="{Binding WaymarkFile.Unstick.Distance, UpdateSourceTrigger=PropertyChanged}" ToolTip="Distance threshold below which player is considered stuck" />
+                                            </StackPanel>
+
+                                            <!-- Wait Timer ms -->
+                                            <StackPanel Grid.Row="0" Grid.Column="1" Margin="6,0,0,8">
+                                                <TextBlock Text="Stuck Timeout (timer ms):" Style="{StaticResource SettingTitle}" FontSize="12" Margin="0,0,0,2" />
+                                                <TextBox Text="{Binding WaymarkFile.Unstick.Timer, UpdateSourceTrigger=PropertyChanged}" ToolTip="Milliseconds before declaring character stuck (default 5000)" />
+                                            </StackPanel>
+
+                                            <!-- Timer2 ms -->
+                                            <StackPanel Grid.Row="1" Grid.Column="0" Margin="0,0,6,8">
+                                                <TextBlock Text="Activation Delay (timer2 ms):" Style="{StaticResource SettingTitle}" FontSize="12" Margin="0,0,0,2" />
+                                                <TextBox Text="{Binding WaymarkFile.Unstick.Timer2, UpdateSourceTrigger=PropertyChanged}" ToolTip="Delay before activating keys (default 2000)" />
+                                            </StackPanel>
+
+                                            <!-- Give Up Attempts -->
+                                            <StackPanel Grid.Row="1" Grid.Column="1" Margin="6,0,0,8">
+                                                <TextBlock Text="Max Give Up Attempts:" Style="{StaticResource SettingTitle}" FontSize="12" Margin="0,0,0,2" />
+                                                <TextBox Text="{Binding WaymarkFile.Unstick.GiveUp, UpdateSourceTrigger=PropertyChanged}" ToolTip="Maximum unstick attempts before executing script (default 5)" />
+                                            </StackPanel>
+                                        </Grid>
+
+                                        <!-- Unstick Keys -->
+                                        <TextBlock Text="Unstick Keys (e.g. 27 for ESC):" Style="{StaticResource SettingTitle}" Margin="0,0,0,3" />
+                                        <TextBox Text="{Binding WaymarkFile.Unstick.Keys, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,8" ToolTip="Key code sequence pressed when unsticking (e.g. 27 for Escape)" />
+
+                                        <!-- Failsafe Script -->
+                                        <TextBlock Text="Failsafe Script (Loaded after give up):" Style="{StaticResource SettingTitle}" Margin="0,0,0,3" />
+                                        <TextBox Text="{Binding WaymarkFile.Unstick.Script, UpdateSourceTrigger=PropertyChanged}" ToolTip="Script/INI to switch to when recovery fails (e.g. probablydead.ini)" />
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- Card 2: [variables] -->
+                                <Border Style="{StaticResource SettingCard}">
+                                    <StackPanel>
+                                        <Grid Margin="0,0,0,8">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+                                            <StackPanel VerticalAlignment="Center">
+                                                <TextBlock Text="[variables] Route Variables" Style="{StaticResource SectionHeader}" Margin="0" />
+                                                <TextBlock Text="Dynamic state variables used across waypoints" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" />
+                                            </StackPanel>
+                                            <StackPanel Grid.Column="1" Orientation="Horizontal">
+                                                <Button Content="➕ Add Var" Command="{Binding AddVariableCommand}" Padding="8,4" FontSize="11.5" Margin="0,0,4,0" ToolTip="Add a new variable" />
+                                                <Button Content="🗑️ Remove" Command="{Binding RemoveVariableCommand}" CommandParameter="{Binding SelectedWaymarkVariable}" Style="{StaticResource DangerButtonStyle}" Padding="8,4" FontSize="11.5" ToolTip="Remove selected variable" />
+                                            </StackPanel>
+                                        </Grid>
+
+                                        <!-- Variables List -->
+                                        <DataGrid ItemsSource="{Binding WaymarkFile.Variables}"
+                                                  SelectedItem="{Binding SelectedWaymarkVariable, Mode=TwoWay}"
+                                                  AutoGenerateColumns="False"
+                                                  CanUserAddRows="False"
+                                                  Height="120">
+                                            <DataGrid.Columns>
+                                                <DataGridTextColumn Header="Variable Name" Binding="{Binding Name, UpdateSourceTrigger=LostFocus}" Width="1.5*" />
+                                                <DataGridTextColumn Header="Initial Value" Binding="{Binding Value, UpdateSourceTrigger=LostFocus}" Width="1*" />
+                                            </DataGrid.Columns>
+                                        </DataGrid>
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- Card 3: Live Waymark INI Preview -->
+                                <Border Style="{StaticResource SettingCard}">
+                                    <StackPanel>
+                                        <Grid Margin="0,0,0,8">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+                                            <StackPanel VerticalAlignment="Center">
+                                                <TextBlock Text="Live Waymark .ini Preview" Style="{StaticResource SectionHeader}" Margin="0" />
+                                                <TextBlock Text="Real-time output of the route" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" />
+                                            </StackPanel>
+                                            <Button Grid.Column="1" Content="📋 Copy Route INI" Command="{Binding CopyWaymarkIniCommand}" />
+                                        </Grid>
+                                        <TextBox Text="{Binding WaymarkIniPreview, Mode=OneWay}"
+                                                 IsReadOnly="True"
+                                                 FontFamily="Consolas"
+                                                 FontSize="11.5"
+                                                 Background="#0c121e"
+                                                 Foreground="#38bdf8"
+                                                 BorderThickness="0"
+                                                 AcceptsReturn="True"
+                                                 VerticalScrollBarVisibility="Auto"
+                                                 HorizontalScrollBarVisibility="Auto"
+                                                 Height="140"
+                                                 Padding="8" />
+                                    </StackPanel>
+                                </Border>
+                            </StackPanel>
+                        </ScrollViewer>
+                    </Grid>
+                </Grid>
+            </TabItem>
+
+            <!-- ==================== TAB 3: COMMANDS & SYNTAX REFERENCE ==================== -->
+            <TabItem Header="📖 Commands &amp; Syntax Reference" Style="{StaticResource StudioTabItemStyle}">
+                <Grid Background="{StaticResource BgBrush}">
+                    <Grid.RowDefinitions>
+                        <!-- Search Bar -->
+                        <RowDefinition Height="Auto" />
+                        <!-- Sub Tabs for 3 categories -->
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+
+                    <!-- Top Search Bar -->
+                    <Border Grid.Row="0" Background="{StaticResource SurfaceBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,0,0,1" Padding="16,10">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+
+                            <!-- Search Input Box -->
+                            <TextBox Text="{Binding SearchReferenceText, UpdateSourceTrigger=PropertyChanged}"
+                                     FontSize="13"
+                                     Padding="10,6"
+                                     ToolTip="Search across commands, syntax, descriptions, examples, and key codes" />
+
+                            <!-- Clear Search Button -->
+                            <Button Grid.Column="1" Content="❌ Clear" Command="{Binding ClearReferenceSearchCommand}" Margin="8,0,16,0" Padding="10,6" />
+
+                            <!-- Count Badges -->
+                            <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                                <Border Background="#1e293b" CornerRadius="4" Padding="8,4" Margin="0,0,6,0">
+                                    <TextBlock Text="{Binding FilteredConsoleCommands.Count, StringFormat='{}{0} Console Commands'}" FontSize="11" FontWeight="Bold" Foreground="{StaticResource AccentBrush}" />
+                                </Border>
+                                <Border Background="#1e293b" CornerRadius="4" Padding="8,4" Margin="0,0,6,0">
+                                    <TextBlock Text="{Binding FilteredMacroCommands.Count, StringFormat='{}{0} Macro Syntax'}" FontSize="11" FontWeight="Bold" Foreground="#a78bfa" />
+                                </Border>
+                                <Border Background="#1e293b" CornerRadius="4" Padding="8,4">
+                                    <TextBlock Text="{Binding FilteredVirtualKeys.Count, StringFormat='{}{0} Virtual Keys'}" FontSize="11" FontWeight="Bold" Foreground="{StaticResource SuccessBrush}" />
+                                </Border>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+
+                    <!-- Sub Tabs Area -->
+                    <TabControl Grid.Row="1" Margin="12">
+                        <!-- Sub-Tab 1: Console Commands (-cmd) -->
+                        <TabItem Header="💻 Console Commands (-cmd)">
+                            <Border Background="{StaticResource SurfaceBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" CornerRadius="8" Padding="8" Margin="0,8,0,0">
+                                <DataGrid ItemsSource="{Binding FilteredConsoleCommands}"
+                                          AutoGenerateColumns="False"
+                                          CanUserAddRows="False"
+                                          IsReadOnly="True"
+                                          RowHeight="36">
+                                    <DataGrid.Columns>
+                                        <!-- Command -->
+                                        <DataGridTextColumn Header="Command" Binding="{Binding Command}" Width="130">
+                                            <DataGridTextColumn.ElementStyle>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="FontWeight" Value="Bold" />
+                                                    <Setter Property="Foreground" Value="{StaticResource AccentBrush}" />
+                                                    <Setter Property="FontFamily" Value="Consolas" />
+                                                    <Setter Property="VerticalAlignment" Value="Center" />
+                                                </Style>
+                                            </DataGridTextColumn.ElementStyle>
+                                        </DataGridTextColumn>
+
+                                        <!-- Category -->
+                                        <DataGridTextColumn Header="Category" Binding="{Binding Category}" Width="120" />
+
+                                        <!-- Arguments -->
+                                        <DataGridTextColumn Header="Arguments" Binding="{Binding Arguments}" Width="140">
+                                            <DataGridTextColumn.ElementStyle>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="FontFamily" Value="Consolas" />
+                                                    <Setter Property="Foreground" Value="#94a3b8" />
+                                                    <Setter Property="VerticalAlignment" Value="Center" />
+                                                </Style>
+                                            </DataGridTextColumn.ElementStyle>
+                                        </DataGridTextColumn>
+
+                                        <!-- Description -->
+                                        <DataGridTextColumn Header="Description" Binding="{Binding Description}" Width="2.5*" />
+
+                                        <!-- Syntax -->
+                                        <DataGridTextColumn Header="Syntax" Binding="{Binding Syntax}" Width="1.5*">
+                                            <DataGridTextColumn.ElementStyle>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="FontFamily" Value="Consolas" />
+                                                    <Setter Property="Foreground" Value="#38bdf8" />
+                                                    <Setter Property="VerticalAlignment" Value="Center" />
+                                                </Style>
+                                            </DataGridTextColumn.ElementStyle>
+                                        </DataGridTextColumn>
+
+                                        <!-- Example -->
+                                        <DataGridTextColumn Header="Example" Binding="{Binding Example}" Width="1.5*">
+                                            <DataGridTextColumn.ElementStyle>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="FontFamily" Value="Consolas" />
+                                                    <Setter Property="Foreground" Value="#a78bfa" />
+                                                    <Setter Property="VerticalAlignment" Value="Center" />
+                                                </Style>
+                                            </DataGridTextColumn.ElementStyle>
+                                        </DataGridTextColumn>
+
+                                        <!-- Related Config Line -->
+                                        <DataGridTextColumn Header="Config Line" Binding="{Binding RelatedConfigLine}" Width="100" />
+
+                                        <!-- Copy Action -->
+                                        <DataGridTemplateColumn Header="Action" Width="90">
+                                            <DataGridTemplateColumn.CellTemplate>
+                                                <DataTemplate>
+                                                    <Button Content="📋 Copy"
+                                                            Command="{Binding DataContext.CopyReferenceSnippetCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                            CommandParameter="{Binding}"
+                                                            Padding="6,2" FontSize="11" HorizontalAlignment="Center" ToolTip="Copy syntax/example to clipboard" />
+                                                </DataTemplate>
+                                            </DataGridTemplateColumn.CellTemplate>
+                                        </DataGridTemplateColumn>
+                                    </DataGrid.Columns>
+                                </DataGrid>
+                            </Border>
+                        </TabItem>
+
+                        <!-- Sub-Tab 2: Macro & Waymark Syntax -->
+                        <TabItem Header="⚡ Macro &amp; Waymark Syntax">
+                            <Border Background="{StaticResource SurfaceBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" CornerRadius="8" Padding="8" Margin="0,8,0,0">
+                                <DataGrid ItemsSource="{Binding FilteredMacroCommands}"
+                                          AutoGenerateColumns="False"
+                                          CanUserAddRows="False"
+                                          IsReadOnly="True"
+                                          RowHeight="36">
+                                    <DataGrid.Columns>
+                                        <!-- Command -->
+                                        <DataGridTextColumn Header="Command" Binding="{Binding Command}" Width="140">
+                                            <DataGridTextColumn.ElementStyle>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="FontWeight" Value="Bold" />
+                                                    <Setter Property="Foreground" Value="#38bdf8" />
+                                                    <Setter Property="FontFamily" Value="Consolas" />
+                                                    <Setter Property="VerticalAlignment" Value="Center" />
+                                                </Style>
+                                            </DataGridTextColumn.ElementStyle>
+                                        </DataGridTextColumn>
+
+                                        <!-- Category -->
+                                        <DataGridTextColumn Header="Category" Binding="{Binding Category}" Width="120" />
+
+                                        <!-- Syntax -->
+                                        <DataGridTextColumn Header="Syntax" Binding="{Binding Syntax}" Width="1.5*">
+                                            <DataGridTextColumn.ElementStyle>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="FontFamily" Value="Consolas" />
+                                                    <Setter Property="Foreground" Value="#a78bfa" />
+                                                    <Setter Property="VerticalAlignment" Value="Center" />
+                                                </Style>
+                                            </DataGridTextColumn.ElementStyle>
+                                        </DataGridTextColumn>
+
+                                        <!-- Description -->
+                                        <DataGridTextColumn Header="Description" Binding="{Binding Description}" Width="2*" />
+
+                                        <!-- Example -->
+                                        <DataGridTextColumn Header="Example" Binding="{Binding Example}" Width="1.5*">
+                                            <DataGridTextColumn.ElementStyle>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="FontFamily" Value="Consolas" />
+                                                    <Setter Property="Foreground" Value="#4ade80" />
+                                                    <Setter Property="VerticalAlignment" Value="Center" />
+                                                </Style>
+                                            </DataGridTextColumn.ElementStyle>
+                                        </DataGridTextColumn>
+
+                                        <!-- Notes -->
+                                        <DataGridTextColumn Header="Notes" Binding="{Binding Notes}" Width="1.5*" />
+
+                                        <!-- Copy Action -->
+                                        <DataGridTemplateColumn Header="Action" Width="90">
+                                            <DataGridTemplateColumn.CellTemplate>
+                                                <DataTemplate>
+                                                    <Button Content="📋 Copy"
+                                                            Command="{Binding DataContext.CopyReferenceSnippetCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                            CommandParameter="{Binding}"
+                                                            Padding="6,2" FontSize="11" HorizontalAlignment="Center" ToolTip="Copy example/syntax to clipboard" />
+                                                </DataTemplate>
+                                            </DataGridTemplateColumn.CellTemplate>
+                                        </DataGridTemplateColumn>
+                                    </DataGrid.Columns>
+                                </DataGrid>
+                            </Border>
+                        </TabItem>
+
+                        <!-- Sub-Tab 3: Virtual Key Codes Reference -->
+                        <TabItem Header="⌨️ Virtual Key Codes Reference">
+                            <Border Background="{StaticResource SurfaceBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" CornerRadius="8" Padding="8" Margin="0,8,0,0">
+                                <DataGrid ItemsSource="{Binding FilteredVirtualKeys}"
+                                          AutoGenerateColumns="False"
+                                          CanUserAddRows="False"
+                                          IsReadOnly="True"
+                                          RowHeight="36">
+                                    <DataGrid.Columns>
+                                        <!-- Code -->
+                                        <DataGridTextColumn Header="Code (Dec)" Binding="{Binding Code}" Width="100">
+                                            <DataGridTextColumn.ElementStyle>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="FontWeight" Value="Bold" />
+                                                    <Setter Property="Foreground" Value="{StaticResource AccentBrush}" />
+                                                    <Setter Property="FontFamily" Value="Consolas" />
+                                                    <Setter Property="HorizontalAlignment" Value="Center" />
+                                                    <Setter Property="VerticalAlignment" Value="Center" />
+                                                </Style>
+                                            </DataGridTextColumn.ElementStyle>
+                                        </DataGridTextColumn>
+
+                                        <!-- Name -->
+                                        <DataGridTextColumn Header="Key Name" Binding="{Binding Name}" Width="180">
+                                            <DataGridTextColumn.ElementStyle>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="FontWeight" Value="SemiBold" />
+                                                    <Setter Property="VerticalAlignment" Value="Center" />
+                                                </Style>
+                                            </DataGridTextColumn.ElementStyle>
+                                        </DataGridTextColumn>
+
+                                        <!-- Category -->
+                                        <DataGridTextColumn Header="Category" Binding="{Binding Category}" Width="140" />
+
+                                        <!-- Notes -->
+                                        <DataGridTextColumn Header="Notes / Usage" Binding="{Binding Notes}" Width="*" />
+
+                                        <!-- Copy Action -->
+                                        <DataGridTemplateColumn Header="Action" Width="100">
+                                            <DataGridTemplateColumn.CellTemplate>
+                                                <DataTemplate>
+                                                    <Button Content="📋 Copy Code"
+                                                            Command="{Binding DataContext.CopyReferenceSnippetCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                            CommandParameter="{Binding}"
+                                                            Padding="6,2" FontSize="11" HorizontalAlignment="Center" ToolTip="Copy virtual key decimal code to clipboard" />
+                                                </DataTemplate>
+                                            </DataGridTemplateColumn.CellTemplate>
+                                        </DataGridTemplateColumn>
+                                    </DataGrid.Columns>
+                                </DataGrid>
+                            </Border>
+                        </TabItem>
+                    </TabControl>
+                </Grid>
+            </TabItem>
+        </TabControl>
     </Grid>
 </Window>
