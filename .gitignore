@@ -1,0 +1,41 @@
+# Visual Studio / .NET Core
+**/bin/
+**/obj/
+**/publish/
+.vs/
+.vscode/
+
+# User-specific files
+*.rsuser
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.userprefs
+
+# Configuration & secret files (subscribers only)
+config.txt
+*.config.txt
+*.ini
+!Recorded Waymarks.ini
+
+# Build results
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Bb]uild/
+bld/
+[Bb]in/
+[Oo]bj/
+
+# Logs
+*.log
+test_output.log
+
+# OS generated
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+.DS_Store

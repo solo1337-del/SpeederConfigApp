@@ -1,0 +1,1514 @@
+<Window x:Class="SpeederConfigApp.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:controls="clr-namespace:SpeederConfigApp.Controls"
+        xmlns:vm="clr-namespace:SpeederConfigApp.ViewModels"
+        mc:Ignorable="d"
+        Title="Speeder Config - 55 Lines Config Generator" 
+        Height="840" Width="1280"
+        MinHeight="700" MinWidth="1050"
+        WindowStartupLocation="CenterScreen"
+        Background="{StaticResource BgBrush}">
+
+    <Window.DataContext>
+        <vm:MainViewModel />
+    </Window.DataContext>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <!-- Header & Toolbar -->
+            <RowDefinition Height="Auto" />
+            <!-- Status Message Bar -->
+            <RowDefinition Height="Auto" />
+            <!-- Main Content Area -->
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <!-- TOP BAR / HEADER -->
+        <Border Grid.Row="0" Background="{StaticResource SurfaceBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,0,0,1" Padding="18,12">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <!-- App Branding -->
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <Border Background="#1e3a8a" CornerRadius="6" Width="36" Height="36" Margin="0,0,12,0">
+                        <TextBlock Text="⚡" FontSize="20" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="{StaticResource AccentBrush}" />
+                    </Border>
+                    <StackPanel VerticalAlignment="Center">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="SPEEDER CONFIG" FontWeight="Bold" FontSize="16" Foreground="{StaticResource TextPrimaryBrush}" />
+                            <Border Background="#1e293b" CornerRadius="4" Padding="6,1" Margin="8,0,0,0" VerticalAlignment="Center">
+                                <TextBlock Text="55 Lines Master" FontSize="10.5" FontWeight="Bold" Foreground="{StaticResource AccentBrush}" />
+                            </Border>
+                        </StackPanel>
+                        <TextBlock Text="Modern Graphical Editor &amp; Formatter for config.txt" FontSize="11.5" Foreground="{StaticResource TextSecondaryBrush}" />
+                    </StackPanel>
+                </StackPanel>
+
+                <!-- Action Buttons -->
+                <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Button Content="📄 New Config" Command="{Binding NewConfigCommand}" Margin="0,0,8,0" ToolTip="Reset to safe default settings" />
+                    <Button Content="📂 Open config.txt" Command="{Binding OpenConfigCommand}" Margin="0,0,8,0" ToolTip="Load and parse an existing config.txt" />
+                    <Button Content="💾 Save" Command="{Binding SaveConfigCommand}" Style="{StaticResource AccentButtonStyle}" Margin="0,0,8,0" ToolTip="Save current configuration to config.txt" />
+                    <Button Content="💾 Save As..." Command="{Binding SaveAsConfigCommand}" Margin="0,0,8,0" ToolTip="Save to a specific location" />
+                    <Button Content="📋 Copy (55 Lines)" Command="{Binding CopyToClipboardCommand}" ToolTip="Copy all 55 generated lines to clipboard" />
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- STATUS / NOTICE BANNER -->
+        <Border Grid.Row="1" Background="{StaticResource CardBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,0,0,1" Padding="14,6">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <Ellipse Width="8" Height="8" Margin="0,0,8,0">
+                        <Ellipse.Style>
+                            <Style TargetType="Ellipse">
+                                <Setter Property="Fill" Value="{StaticResource SuccessBrush}" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding StatusIsError}" Value="True">
+                                        <Setter Property="Fill" Value="{StaticResource DangerBrush}" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Ellipse.Style>
+                    </Ellipse>
+                    <TextBlock Text="{Binding StatusMessage}" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" />
+                </StackPanel>
+
+                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Text="{Binding CurrentFilePath, StringFormat='File: {0}'}" FontSize="11" Foreground="{StaticResource TextMutedBrush}" Margin="0,0,12,0" />
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- MAIN SPLIT CONTENT -->
+        <Grid Grid.Row="2">
+            <Grid.ColumnDefinitions>
+                <!-- Editor Columns -->
+                <ColumnDefinition Width="3*" MinWidth="550" />
+                <!-- Splitter -->
+                <ColumnDefinition Width="6" />
+                <!-- Preview & Inspection Column -->
+                <ColumnDefinition Width="2*" MinWidth="320" />
+            </Grid.ColumnDefinitions>
+
+            <!-- LEFT: Categorized Settings Navigation Tabs -->
+            <Border Grid.Column="0" Margin="12">
+                <TabControl x:Name="SettingsTabControl">
+                    <!-- ================= TAB 1: SYSTEM & GENERAL ================= -->
+                    <TabItem Header="⚙️ System &amp; Core">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="4,8,8,4">
+                            <StackPanel>
+                                <!-- Line 1: Master Toggle Key -->
+                                <Border Style="{StaticResource SettingCard}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="240" />
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel VerticalAlignment="Center" Margin="0,0,12,0">
+                                            <StackPanel Orientation="Horizontal">
+                                                <Border Style="{StaticResource LineBadge}"><TextBlock Text="LINE 1" Style="{StaticResource LineBadgeText}" /></Border>
+                                                <TextBlock Text="Master Toggle Key" Style="{StaticResource SettingTitle}" />
+                                            </StackPanel>
+                                            <TextBlock Text="The virtual key code to globally disable or enable all hacks in speeder." Style="{StaticResource SettingDesc}" />
+                                        </StackPanel>
+                                        <controls:KeyPickerControl Grid.Column="1" KeyCode="{Binding Settings.MasterToggleKey, Mode=TwoWay}" />
+                                    </Grid>
+                                </Border>
+
+                                <!-- Line 20: Driver Name -->
+                                <Border Style="{StaticResource SettingCard}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="240" />
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel VerticalAlignment="Center" Margin="0,0,12,0">
+                                            <StackPanel Orientation="Horizontal">
+                                                <Border Style="{StaticResource LineBadge}"><TextBlock Text="LINE 20" Style="{StaticResource LineBadgeText}" /></Border>
+                                                <TextBlock Text="Driver Name" Style="{StaticResource SettingTitle}" />
+                                            </StackPanel>
+                                            <TextBlock Text="Must appear exactly as it does in Driver.ini." Style="{StaticResource SettingDesc}" />
+                                        </StackPanel>
+                                        <TextBox Grid.Column="1" Text="{Binding Settings.DriverName, UpdateSourceTrigger=PropertyChanged}" />
+                                    </Grid>
+                                </Border>
+
+                                <!-- Line 29: Macro File Name -->
+                                <Border Style="{StaticResource SettingCard}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="240" />
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel VerticalAlignment="Center" Margin="0,0,12,0">
+                                            <StackPanel Orientation="Horizontal">
+                                                <Border Style="{StaticResource LineBadge}"><TextBlock Text="LINE 29" Style="{StaticResource LineBadgeText}" /></Border>
+                                                <TextBlock Text="Macro File Name" Style="{StaticResource SettingTitle}" />
+                                            </StackPanel>
+                                            <TextBlock Text="File name including extension (e.g., Recorded Waymarks.ini or macros.ini)." Style="{StaticResource SettingDesc}" />
+                                        </StackPanel>
+                                        <TextBox Grid.Column="1" Text="{Binding Settings.MacroFileName, UpdateSourceTrigger=PropertyChanged}" />
+                                    </Grid>
+                                </Border>
+
+                                <!-- Line 30: Injected Keys Allowed -->
+                                <Border Style="{StaticResource SettingCard}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel VerticalAlignment="Center" Margin="0,0,12,0">
+                                            <StackPanel Orientation="Horizontal">
+                                                <Border Style="{StaticResource LineBadge}"><TextBlock Text="LINE 30" Style="{StaticResource LineBadgeText}" /></Border>
+                                                <TextBlock Text="Allow Injected Controller / Virtual Keys" Style="{StaticResource SettingTitle}" />
+                                            </StackPanel>
+                                            <TextBlock Text="If 1, keys from a controller can trigger macros. Caution: Never let a macro press its initiating key!" Style="{StaticResource SettingDesc}" />
+                                        </StackPanel>
+                                        <CheckBox Grid.Column="1" Content="Enable Injected Keys" IsChecked="{Binding Settings.InjectedKeysAllowed, Mode=TwoWay}" />
+                                    </Grid>
+                                </Border>
+
+                                <!-- Line 34: Polling Interval -->
+                                <Border Style="{StaticResource SettingCard}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="240" />
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel VerticalAlignment="Center" Margin="0,0,12,0">
+                                            <StackPanel Orientation="Horizontal">
+                                                <Border Style="{StaticResource LineBadge}"><TextBlock Text="LINE 34" Style="{StaticResource LineBadgeText}" /></Border>
+                                                <TextBlock Text="Polling Interval (Milliseconds)" Style="{StaticResource SettingTitle}" />
+                                            </StackPanel>
+                                            <TextBlock Text="How often to read nonessential addresses and perform basic functions (recommended 1000+ ms)." Style="{StaticResource SettingDesc}" />
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                            <TextBox Text="{Binding Settings.PollingIntervalMs, UpdateSourceTrigger=PropertyChanged}" />
+                                        </StackPanel>
+                                    </Grid>
+                                </Border>
+
+                                <!-- Line 35: Memory Debug Monitor -->
+                                <Border Style="{StaticResource SettingCard}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel VerticalAlignment="Center" Margin="0,0,12,0">
+                                            <StackPanel Orientation="Horizontal">
+                                                <Border Style="{StaticResource LineBadge}"><TextBlock Text="LINE 35" Style="{StaticResource LineBadgeText}" /></Border>
+                                                <TextBlock Text="Memory Read / Write Activity Log" Style="{StaticResource SettingTitle}" />
+                                            </StackPanel>
+                                            <TextBlock Text="If enabled (1), outputs memory read/write activity to verify Line 34 operation." Style="{StaticResource SettingDesc}" />
+                                        </StackPanel>
+                                        <CheckBox Grid.Column="1" Content="Show Memory Activity" IsChecked="{Binding Settings.MemoryDebugEnabled, Mode=TwoWay}" />
+                                    </Grid>
+                                </Border>
+
+                                <!-- Line 42: Kernel Input Setting -->
+                                <Border Style="{StaticResource SettingCard}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="240" />
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel VerticalAlignment="Center" Margin="0,0,12,0">
+                                            <StackPanel Orientation="Horizontal">
+                                                <Border Style="{StaticResource LineBadge}"><TextBlock Text="LINE 42" Style="{StaticResource LineBadgeText}" /></Border>
+                                                <TextBlock Text="Kernel Input Setting" Style="{StaticResource SettingTitle}" />
+                                            </StackPanel>
+                                            <TextBlock Text="Controls kernel-level driver input for mouse/keyboard emulation." Style="{StaticResource SettingDesc}" />
+                                        </StackPanel>
+                                        <TextBox Grid.Column="1" Text="{Binding Settings.KernelInputSetting, UpdateSourceTrigger=PropertyChanged}" />
+                                    </Grid>
+                                </Border>
+
+                                <!-- Line 44: Console Window Settings -->
+                                <Border Style="{StaticResource SettingCard}">
+                                    <StackPanel>
+                                        <Grid Margin="0,0,0,8">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+                                            <StackPanel VerticalAlignment="Center">
+                                                <StackPanel Orientation="Horizontal">
+                                                    <Border Style="{StaticResource LineBadge}"><TextBlock Text="LINE 44" Style="{StaticResource LineBadgeText}" /></Border>
+                                                    <TextBlock Text="Console Window Settings" Style="{StaticResource SectionHeader}" Foreground="{StaticResource TextPrimaryBrush}" Margin="0" />
+                                                </StackPanel>
+                                                <TextBlock Text="Controls the position, dimensions, colors, font, and window behavior of speeder's interactive command console." Style="{StaticResource SettingDesc}" Margin="0,2,0,0" />
+                                            </StackPanel>
+                                            <CheckBox Grid.Column="1" Content="Enable Custom Console" IsChecked="{Binding Settings.ConsoleEnabled, Mode=TwoWay}" FontWeight="Bold" ToolTip="If disabled, Line 44 is left blank and speeder uses default console placement." />
+                                        </Grid>
+
+                                        <StackPanel Visibility="{Binding Settings.ConsoleEnabled, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                            <!-- Quick Presets Bar -->
+                                            <Border Background="{StaticResource SurfaceBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" CornerRadius="6" Padding="10,6" Margin="0,4,0,10">
+                                                <WrapPanel VerticalAlignment="Center">
+                                                    <TextBlock Text="⚡ Quick Layout Presets: " VerticalAlignment="Center" FontSize="11.5" FontWeight="SemiBold" Foreground="{StaticResource AccentBrush}" Margin="0,0,8,0" />
+                                                    <Button Content="Top-Left Corner" Command="{Binding ApplyConsolePresetTopLeftCommand}" Margin="2" Padding="8,3" FontSize="11" />
+                                                    <Button Content="Bottom-Right Corner" Command="{Binding ApplyConsolePresetBottomRightCommand}" Margin="2" Padding="8,3" FontSize="11" />
+                                                    <Button Content="Transparent Terminal" Command="{Binding ApplyConsolePresetOverlayCommand}" Margin="2" Padding="8,3" FontSize="11" />
+                                                </WrapPanel>
+                                            </Border>
+
+                                            <!-- Parameter 1-4: Window Position & Dimensions -->
+                                            <TextBlock Text="1. Window Position &amp; Geometry" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource AccentBrush}" Margin="0,2,0,4" />
+                                            <UniformGrid Columns="4" Margin="0,0,0,8">
+                                                <StackPanel Margin="3">
+                                                    <TextBlock Text="X Position (px)" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" />
+                                                    <TextBox Text="{Binding Settings.ConsolePosX, UpdateSourceTrigger=PropertyChanged}" ToolTip="Distance in pixels from the left edge of your screen (e.g. 0 or 20)." />
+                                                    <TextBlock Text="Pixels from left" FontSize="10" Foreground="{StaticResource TextMutedBrush}" Margin="0,2,0,0" />
+                                                </StackPanel>
+                                                <StackPanel Margin="3">
+                                                    <TextBlock Text="Y Position (px)" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" />
+                                                    <TextBox Text="{Binding Settings.ConsolePosY, UpdateSourceTrigger=PropertyChanged}" ToolTip="Distance in pixels from the top edge of your screen (e.g. 0 or 20)." />
+                                                    <TextBlock Text="Pixels from top" FontSize="10" Foreground="{StaticResource TextMutedBrush}" Margin="0,2,0,0" />
+                                                </StackPanel>
+                                                <StackPanel Margin="3">
+                                                    <TextBlock Text="Width (px)" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" />
+                                                    <TextBox Text="{Binding Settings.ConsoleWidth, UpdateSourceTrigger=PropertyChanged}" ToolTip="Width of the console window in pixels (default ~520)." />
+                                                    <TextBlock Text="Window width" FontSize="10" Foreground="{StaticResource TextMutedBrush}" Margin="0,2,0,0" />
+                                                </StackPanel>
+                                                <StackPanel Margin="3">
+                                                    <TextBlock Text="Height (px)" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" />
+                                                    <TextBox Text="{Binding Settings.ConsoleHeight, UpdateSourceTrigger=PropertyChanged}" ToolTip="Height of the console window in pixels (default ~380)." />
+                                                    <TextBlock Text="Window height" FontSize="10" Foreground="{StaticResource TextMutedBrush}" Margin="0,2,0,0" />
+                                                </StackPanel>
+                                            </UniformGrid>
+
+                                            <!-- Parameter 5 & 10: Typography & Font -->
+                                            <TextBlock Text="2. Typography &amp; Text Styling" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource AccentBrush}" Margin="0,6,0,4" />
+                                            <UniformGrid Columns="2" Margin="0,0,0,8">
+                                                <StackPanel Margin="3">
+                                                    <TextBlock Text="Font Size" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" />
+                                                    <TextBox Text="{Binding Settings.ConsoleFontSize, UpdateSourceTrigger=PropertyChanged}" ToolTip="Font size of the text printed inside the console (e.g. 13 or 14)." />
+                                                    <TextBlock Text="Size of log text in pt" FontSize="10" Foreground="{StaticResource TextMutedBrush}" Margin="0,2,0,0" />
+                                                </StackPanel>
+                                                <StackPanel Margin="3">
+                                                    <TextBlock Text="Font Family (Optional)" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" />
+                                                    <TextBox Text="{Binding Settings.ConsoleFont, UpdateSourceTrigger=PropertyChanged}" ToolTip="Name of any installed font, e.g. Consolas, Lucida Console, Arial, Courier New." />
+                                                    <TextBlock Text="e.g. Consolas, Arial" FontSize="10" Foreground="{StaticResource TextMutedBrush}" Margin="0,2,0,0" />
+                                                </StackPanel>
+                                            </UniformGrid>
+
+                                            <!-- Parameter 6 & 7: Window Colors -->
+                                            <TextBlock Text="3. Console Colors (Decimal RGB)" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource AccentBrush}" Margin="0,6,0,4" />
+                                            <UniformGrid Columns="2" Margin="0,0,0,8">
+                                                <StackPanel Margin="3">
+                                                    <TextBlock Text="Background Color:" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,2" />
+                                                    <controls:ColorPickerControl ColorValue="{Binding Settings.ConsoleBgColor, Mode=TwoWay}" ToolTip="Background color in decimal RGB. 3618615 = dark gray, 0 = black." />
+                                                    <TextBlock Text="Default 3618615 (Dark Gray)" FontSize="10" Foreground="{StaticResource TextMutedBrush}" Margin="0,2,0,0" />
+                                                </StackPanel>
+                                                <StackPanel Margin="3">
+                                                    <TextBlock Text="Text / Foreground Color:" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,2" />
+                                                    <controls:ColorPickerControl ColorValue="{Binding Settings.ConsoleTextColor, Mode=TwoWay}" ToolTip="Text color in decimal RGB. 16777215 = White, 65280 = Green." />
+                                                    <TextBlock Text="Default 16777215 (White)" FontSize="10" Foreground="{StaticResource TextMutedBrush}" Margin="0,2,0,0" />
+                                                </StackPanel>
+                                            </UniformGrid>
+
+                                            <!-- Parameter 8 & 9: Window Behavior Flags -->
+                                            <TextBlock Text="4. Window Display Flags" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource AccentBrush}" Margin="0,6,0,4" />
+                                            <WrapPanel Margin="0,2,0,8">
+                                                <CheckBox Content="Transparent Window (1 = See-through, 0 = Opaque)" IsChecked="{Binding Settings.ConsoleTransparent, Mode=TwoWay}" Margin="3,0,20,4" ToolTip="When enabled, console background is transparent to avoid blocking your game view." />
+                                                <CheckBox Content="Always On Top (1 = Topmost Window)" IsChecked="{Binding Settings.ConsoleAlwaysOnTop, Mode=TwoWay}" Margin="3,0,20,4" ToolTip="Keeps the console window on top of the game even when clicking in the game window." />
+                                            </WrapPanel>
+
+                                            <!-- Parameter Format Reference Callout -->
+                                            <Border Background="{StaticResource SurfaceBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" CornerRadius="6" Padding="10" Margin="0,4,0,4">
+                                                <StackPanel>
+                                                    <TextBlock Text="📖 Line 44 Format Specification:" FontWeight="SemiBold" FontSize="11" Foreground="{StaticResource AccentBrush}" Margin="0,0,0,4" />
+                                                    <TextBlock Text="X position | Y position | Width | Height | Font size | Background color | Text color | Transparent | Always on top | (Optional) Font" FontFamily="Consolas" FontSize="10.5" Foreground="{StaticResource TextPrimaryBrush}" TextWrapping="Wrap" />
+                                                    <TextBlock Text="Example: 0|0|520|380|13|3618615|16777215|0|1|Consolas" FontFamily="Consolas" FontSize="10.5" Foreground="{StaticResource TextMutedBrush}" Margin="0,2,0,0" />
+                                                </StackPanel>
+                                            </Border>
+
+                                            <!-- Raw String Override Option -->
+                                            <Expander Header="Advanced: Raw String Override" Foreground="{StaticResource TextSecondaryBrush}" FontSize="11" Margin="0,6,0,0">
+                                                <StackPanel Margin="4,6,4,0">
+                                                    <TextBlock Text="If you want to paste a raw custom string directly for Line 44, enter it below (leave empty to use the fields above):" FontSize="10.5" Foreground="{StaticResource TextMutedBrush}" TextWrapping="Wrap" Margin="0,0,0,4" />
+                                                    <TextBox Text="{Binding Settings.ConsoleCustomOverride, UpdateSourceTrigger=PropertyChanged}" FontFamily="Consolas" FontSize="11" />
+                                                </StackPanel>
+                                            </Expander>
+                                        </StackPanel>
+                                    </StackPanel>
+                                </Border>
+                            </StackPanel>
+                        </ScrollViewer>
+                    </TabItem>
+
+                    <!-- ================= TAB 2: SPEED & VIEW ================= -->
+                    <TabItem Header="🚀 Speed &amp; FOV">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="4,8,8,4">
+                            <StackPanel>
+                                <!-- Line 2: Movement Speed Multiplier -->
+                                <Border Style="{StaticResource SettingCard}">
+                                    <StackPanel>
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="100" />
+                                            </Grid.ColumnDefinitions>
+                                            <StackPanel VerticalAlignment="Center">
+                                                <StackPanel Orientation="Horizontal">
+                                                    <Border Style="{StaticResource LineBadge}"><TextBlock Text="LINE 2" Style="{StaticResource LineBadgeText}" /></Border>
+                                                    <TextBlock Text="Movement Speed Multiplier" Style="{StaticResource SettingTitle}" />
+                                                </StackPanel>
+                                                <TextBlock Text="Percentage multiplier. 1.05 = +5% speed, 1.10 = +10% speed." Style="{StaticResource SettingDesc}" />
+                                            </StackPanel>
+                                            <TextBox Grid.Column="1" Text="{Binding Settings.MovementSpeedMultiplier, StringFormat='{}{0:0.##}', UpdateSourceTrigger=PropertyChanged}" TextAlignment="Center" />
+                                        </Grid>
+                                        <Slider Minimum="1.00" Maximum="1.50" Value="{Binding Settings.MovementSpeedMultiplier}" SmallChange="0.01" LargeChange="0.05" Margin="0,6,0,6" />
+                                        <!-- Strict Server Warning Banner -->
+                                        <Border Background="#2a1b18" BorderBrush="#7c2d12" BorderThickness="1" CornerRadius="4" Padding="8,5">
+                                            <TextBlock Text="⚠️ Server check for movement speed is strict. Values higher than 1.05 (+5%) may trigger detection or rubberbanding." FontSize="11" Foreground="#fdba74" />
+                                        </Border>
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- Line 3: Movement Speed Toggle Key -->
+                                <Border Style="{StaticResource SettingCard}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="240" />
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel VerticalAlignment="Center" Margin="0,0,12,0">
+                                            <StackPanel Orientation="Horizontal">
+                                                <Border Style="{StaticResource LineBadge}"><TextBlock Text="LINE 3" Style="{StaticResource LineBadgeText}" /></Border>
+                                                <TextBlock Text="Movement Speed Toggle Key" Style="{StaticResource SettingTitle}" />
+                                            </StackPanel>
+                                            <TextBlock Text="Virtual key code to toggle speed boost on/off during gameplay." Style="{StaticResource SettingDesc}" />
+                                        </StackPanel>
+                                        <controls:KeyPickerControl Grid.Column="1" KeyCode="{Binding Settings.MovementSpeedToggleKey, Mode=TwoWay}" />
+                                    </Grid>
+                                </Border>
+
+                                <!-- Line 21: Field of View (FOV) -->
+                                <Border Style="{StaticResource SettingCard}">
+                                    <StackPanel>
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="180" />
+                                            </Grid.ColumnDefinitions>
+                                            <StackPanel VerticalAlignment="Center">
+                                                <StackPanel Orientation="Horizontal">
+                                                    <Border Style="{StaticResource LineBadge}"><TextBlock Text="LINE 21" Style="{StaticResource LineBadgeText}" /></Border>
+                                                    <TextBlock Text="Field of View (Recommended over Max Zoom)" Style="{StaticResource SettingTitle}" />
+                                                </StackPanel>
+                                                <TextBlock Text="1 (or 0) is normal. Values LESS than 1 INCREASE field of view without adding fog! Can also be X|Y (e.g. 0.5|0.75)." Style="{StaticResource SettingDesc}" />
+                                            </StackPanel>
+                                            <TextBox Grid.Column="1" Text="{Binding Settings.FieldOfView, UpdateSourceTrigger=PropertyChanged}" TextAlignment="Center" />
+                                        </Grid>
+                                        <WrapPanel Margin="0,6,0,0">
+                                            <TextBlock Text="Quick Presets: " VerticalAlignment="Center" FontSize="11" Foreground="{StaticResource TextMutedBrush}" Margin="0,0,4,0" />
+                                            <Button Content="1.0 (Normal)" Margin="2" Padding="6,2" FontSize="11" Command="{Binding SetDefaultFieldOfViewCommand}" CommandParameter="1" />
+                                            <Button Content="0.75 (+25% View)" Margin="2" Padding="6,2" FontSize="11" Command="{Binding SetDefaultFieldOfViewCommand}" CommandParameter="0.75" />
+                                            <Button Content="0.50 (+50% View)" Margin="2" Padding="6,2" FontSize="11" Command="{Binding SetDefaultFieldOfViewCommand}" CommandParameter="0.50" />
+                                            <Button Content="0.5|0.75 (Aspect Ratio Split)" Margin="2" Padding="6,2" FontSize="11" Command="{Binding SetDefaultFieldOfViewCommand}" CommandParameter="0.5|0.75" />
+                                        </WrapPanel>
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- Line 4: Max Zoom Multiplier -->
+                                <Border Style="{StaticResource SettingCard}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="100" />
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel VerticalAlignment="Center" Margin="0,0,12,0">
+                                            <StackPanel Orientation="Horizontal">
+                                                <Border Style="{StaticResource LineBadge}"><TextBlock Text="LINE 4" Style="{StaticResource LineBadgeText}" /></Border>
+                                                <TextBlock Text="Max Zoom Multiplier (Percentage)" Style="{StaticResource SettingTitle}" />
+                                            </StackPanel>
+                                            <TextBlock Text="1 = 2x zoom, 2 = 3x zoom, 0.50 = +50%. (Note: Increases fog. Line 21 FOV is recommended instead)." Style="{StaticResource SettingDesc}" />
+                                        </StackPanel>
+                                        <TextBox Grid.Column="1" Text="{Binding Settings.MaxZoomMultiplier, StringFormat='{}{0:0.##}', UpdateSourceTrigger=PropertyChanged}" TextAlignment="Center" />
+                                    </Grid>
+                                </Border>
+
+                                <!-- Line 5: Max Zoom Toggle Key -->
+                                <Border Style="{StaticResource SettingCard}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="240" />
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel VerticalAlignment="Center" Margin="0,0,12,0">
+                                            <StackPanel Orientation="Horizontal">
+                                                <Border Style="{StaticResource LineBadge}"><TextBlock Text="LINE 5" Style="{StaticResource LineBadgeText}" /></Border>
+                                                <TextBlock Text="Max Zoom Toggle Key" Style="{StaticResource SettingTitle}" />
+                                            </StackPanel>
+                                            <TextBlock Text="Virtual key code to toggle max zoom." Style="{StaticResource SettingDesc}" />
+                                        </StackPanel>
+                                        <controls:KeyPickerControl Grid.Column="1" KeyCode="{Binding Settings.MaxZoomToggleKey, Mode=TwoWay}" />
+                                    </Grid>
+                                </Border>
+                            </StackPanel>
+                        </ScrollViewer>
+                    </TabItem>
+
+                    <!-- ================= TAB 3: CAMERA CONTROLS ================= -->
+                    <TabItem Header="🎥 Camera Controls">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="4,8,8,4">
+                            <StackPanel>
+                                <!-- Line 28: Master Camera Hacks Toggle Key -->
+                                <Border Style="{StaticResource SettingCard}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="240" />
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel VerticalAlignment="Center" Margin="0,0,12,0">
+                                            <StackPanel Orientation="Horizontal">
+                                                <Border Style="{StaticResource LineBadge}"><TextBlock Text="LINE 28" Style="{StaticResource LineBadgeText}" /></Border>
+                                                <TextBlock Text="Camera Hacks Master Toggle Key" Style="{StaticResource SettingTitle}" />
+                                            </StackPanel>
+                                            <TextBlock Text="Enables / disables all camera-related hacks, including screen boundary clamp." Style="{StaticResource SettingDesc}" />
+                                        </StackPanel>
+                                        <controls:KeyPickerControl Grid.Column="1" KeyCode="{Binding Settings.CameraHacksToggleKey, Mode=TwoWay}" />
+                                    </Grid>
+                                </Border>
+
+                                <!-- Line 12: MMO Free-Look Hold Key -->
+                                <Border Style="{StaticResource SettingCard}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="240" />
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel VerticalAlignment="Center" Margin="0,0,12,0">
+                                            <StackPanel Orientation="Horizontal">
+                                                <Border Style="{StaticResource LineBadge}"><TextBlock Text="LINE 12" Style="{StaticResource LineBadgeText}" /></Border>
+                                                <TextBlock Text="MMO Free-Look Hold Key" Style="{StaticResource SettingTitle}" />
+                                            </StackPanel>
+                                            <TextBlock Text="Hold this key to freely rotate camera with your mouse like in FFXIV or WoW." Style="{StaticResource SettingDesc}" />
+                                        </StackPanel>
+                                        <controls:KeyPickerControl Grid.Column="1" KeyCode="{Binding Settings.CameraFreeLookHoldKey, Mode=TwoWay}" />
+                                    </Grid>
+                                </Border>
+
+                                <!-- Free Look Settings Grid (Lines 13, 14, 16, 17, 18) -->
+                                <Border Style="{StaticResource SettingCard}">
+                                    <StackPanel>
+                                        <TextBlock Text="Free-Look Tuning &amp; Inversion" Style="{StaticResource SectionHeader}" />
+                                        
+                                        <!-- Line 16: Swing Speed -->
+                                        <Grid Margin="0,0,0,8">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="100" />
+                                            </Grid.ColumnDefinitions>
+                                            <StackPanel VerticalAlignment="Center">
+                                                <StackPanel Orientation="Horizontal">
+                                                    <Border Style="{StaticResource LineBadge}"><TextBlock Text="LINE 16" Style="{StaticResource LineBadgeText}" /></Border>
+                                                    <TextBlock Text="Camera Swing Speed (0.01 to 100+)" Style="{StaticResource SettingTitle}" />
+                                                </StackPanel>
+                                                <TextBlock Text="Sensitivity when rotating camera via Line 12." Style="{StaticResource SettingDesc}" />
+                                            </StackPanel>
+                                            <TextBox Grid.Column="1" Text="{Binding Settings.CameraSwingSpeed, StringFormat='{}{0:0.##}', UpdateSourceTrigger=PropertyChanged}" TextAlignment="Center" />
+                                        </Grid>
+
+                                        <!-- Inversions & Locks Checkboxes -->
+                                        <UniformGrid Columns="2" Margin="0,6,0,0">
+                                            <CheckBox Margin="0,4" Content="Line 13: Invert Y-Axis" IsChecked="{Binding Settings.CameraInvertY, Mode=TwoWay}" />
+                                            <CheckBox Margin="0,4" Content="Line 14: Invert X-Axis" IsChecked="{Binding Settings.CameraInvertX, Mode=TwoWay}" />
+                                            <CheckBox Margin="0,4" Content="Line 17: Lock X-Axis Movement" IsChecked="{Binding Settings.CameraLockX, Mode=TwoWay}" />
+                                            <CheckBox Margin="0,4" Content="Line 18: Lock Y-Axis Movement" IsChecked="{Binding Settings.CameraLockY, Mode=TwoWay}" />
+                                        </UniformGrid>
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- Horizontal Camera Rotation Keys (Lines 6, 7, 8) -->
+                                <Border Style="{StaticResource SettingCard}">
+                                    <StackPanel>
+                                        <TextBlock Text="Keyboard Horizontal Rotation (Yaw)" Style="{StaticResource SectionHeader}" />
+                                        <Grid Margin="0,4">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="240" />
+                                            </Grid.ColumnDefinitions>
+                                            <StackPanel VerticalAlignment="Center">
+                                                <StackPanel Orientation="Horizontal">
+                                                    <Border Style="{StaticResource LineBadge}"><TextBlock Text="LINE 6" Style="{StaticResource LineBadgeText}" /></Border>
+                                                    <TextBlock Text="Rotate Camera Right Key" Style="{StaticResource SettingTitle}" />
+                                                </StackPanel>
+                                            </StackPanel>
+                                            <controls:KeyPickerControl Grid.Column="1" KeyCode="{Binding Settings.CameraRotateRightKey, Mode=TwoWay}" />
+                                        </Grid>
+
+                                        <Grid Margin="0,8">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="240" />
+                                            </Grid.ColumnDefinitions>
+                                            <StackPanel VerticalAlignment="Center">
+                                                <StackPanel Orientation="Horizontal">
+                                                    <Border Style="{StaticResource LineBadge}"><TextBlock Text="LINE 7" Style="{StaticResource LineBadgeText}" /></Border>
+                                                    <TextBlock Text="Rotate Camera Left Key" Style="{StaticResource SettingTitle}" />
+                                                </StackPanel>
+                                            </StackPanel>
+                                            <controls:KeyPickerControl Grid.Column="1" KeyCode="{Binding Settings.CameraRotateLeftKey, Mode=TwoWay}" />
+                                        </Grid>
+
+                                        <Grid Margin="0,4">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="100" />
+                                            </Grid.ColumnDefinitions>
+                                            <StackPanel VerticalAlignment="Center">
+                                                <StackPanel Orientation="Horizontal">
+                                                    <Border Style="{StaticResource LineBadge}"><TextBlock Text="LINE 8" Style="{StaticResource LineBadgeText}" /></Border>
+                                                    <TextBlock Text="Horizontal Rotation Step Per Tick" Style="{StaticResource SettingTitle}" />
+                                                </StackPanel>
+                                            </StackPanel>
+                                            <TextBox Grid.Column="1" Text="{Binding Settings.CameraRotateStepHorizontal, StringFormat='{}{0:0.##}', UpdateSourceTrigger=PropertyChanged}" TextAlignment="Center" />
+                                        </Grid>
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- Vertical Camera Rotation Keys (Lines 9, 10, 11) -->
+                                <Border Style="{StaticResource SettingCard}">
+                                    <StackPanel>
+                                        <TextBlock Text="Keyboard Vertical Rotation (Pitch)" Style="{StaticResource SectionHeader}" />
+                                        <Grid Margin="0,4">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="240" />
+                                            </Grid.ColumnDefinitions>
+                                            <StackPanel VerticalAlignment="Center">
+                                                <StackPanel Orientation="Horizontal">
+                                                    <Border Style="{StaticResource LineBadge}"><TextBlock Text="LINE 9" Style="{StaticResource LineBadgeText}" /></Border>
+                                                    <TextBlock Text="Rotate Camera Up Key" Style="{StaticResource SettingTitle}" />
+                                                </StackPanel>
+                                            </StackPanel>
+                                            <controls:KeyPickerControl Grid.Column="1" KeyCode="{Binding Settings.CameraRotateUpKey, Mode=TwoWay}" />
+                                        </Grid>
+
+                                        <Grid Margin="0,8">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="240" />
+                                            </Grid.ColumnDefinitions>
+                                            <StackPanel VerticalAlignment="Center">
+                                                <StackPanel Orientation="Horizontal">
+                                                    <Border Style="{StaticResource LineBadge}"><TextBlock Text="LINE 10" Style="{StaticResource LineBadgeText}" /></Border>
+                                                    <TextBlock Text="Rotate Camera Down Key" Style="{StaticResource SettingTitle}" />
+                                                </StackPanel>
+                                            </StackPanel>
+                                            <controls:KeyPickerControl Grid.Column="1" KeyCode="{Binding Settings.CameraRotateDownKey, Mode=TwoWay}" />
+                                        </Grid>
+
+                                        <Grid Margin="0,4">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="100" />
+                                            </Grid.ColumnDefinitions>
+                                            <StackPanel VerticalAlignment="Center">
+                                                <StackPanel Orientation="Horizontal">
+                                                    <Border Style="{StaticResource LineBadge}"><TextBlock Text="LINE 11" Style="{StaticResource LineBadgeText}" /></Border>
+                                                    <TextBlock Text="Vertical Rotation Step Per Tick" Style="{StaticResource SettingTitle}" />
+                                                </StackPanel>
+                                            </StackPanel>
+                                            <TextBox Grid.Column="1" Text="{Binding Settings.CameraRotateStepVertical, StringFormat='{}{0:0.##}', UpdateSourceTrigger=PropertyChanged}" TextAlignment="Center" />
+                                        </Grid>
+                                    </StackPanel>
+                                </Border>
+                            </StackPanel>
+                        </ScrollViewer>
+                    </TabItem>
+
+                    <!-- ================= TAB 4: MOUSE & SCREEN CLAMP ================= -->
+                    <TabItem Header="🖱️ Mouse &amp; Bounds">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="4,8,8,4">
+                            <StackPanel>
+                                <!-- Line 19: Screen Mouse Clamp Bounds -->
+                                <Border Style="{StaticResource SettingCard}">
+                                    <StackPanel>
+                                        <StackPanel Orientation="Horizontal">
+                                            <Border Style="{StaticResource LineBadge}"><TextBlock Text="LINE 19" Style="{StaticResource LineBadgeText}" /></Border>
+                                            <TextBlock Text="Screen Boundary Clamp (min_x|max_x|min_y|max_y)" Style="{StaticResource SettingTitle}" />
+                                        </StackPanel>
+                                        <TextBlock Text="Prevents zoom/FOV detection by ensuring cursor never clicks farther than the normal screen edge." Style="{StaticResource SettingDesc}" />
+
+                                        <!-- Bounds Calculator Box -->
+                                        <Border Background="{StaticResource SurfaceBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" CornerRadius="6" Padding="12" Margin="0,4,0,12">
+                                            <StackPanel>
+                                                <TextBlock Text="⚡ Screen Boundary Calculator" FontWeight="Bold" Foreground="{StaticResource AccentBrush}" Margin="0,0,0,8" />
+                                                <WrapPanel Margin="0,0,0,8">
+                                                    <StackPanel Margin="0,0,12,4">
+                                                        <TextBlock Text="Resolution Preset:" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" />
+                                                        <ComboBox Width="160" SelectedValue="{Binding SelectedResPreset, Mode=TwoWay}" SelectedValuePath="Content">
+                                                            <ComboBoxItem Content="1920x1080 (1080p)" IsSelected="True" />
+                                                            <ComboBoxItem Content="2560x1440 (1440p / 2K)" />
+                                                            <ComboBoxItem Content="3840x2160 (4K UHD)" />
+                                                            <ComboBoxItem Content="Custom Resolution" />
+                                                        </ComboBox>
+                                                    </StackPanel>
+
+                                                    <StackPanel Margin="0,0,8,4">
+                                                        <TextBlock Text="Width (X):" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" />
+                                                        <TextBox Width="70" Text="{Binding CalcResWidth, UpdateSourceTrigger=PropertyChanged}" />
+                                                    </StackPanel>
+
+                                                    <StackPanel Margin="0,0,8,4">
+                                                        <TextBlock Text="Height (Y):" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" />
+                                                        <TextBox Width="70" Text="{Binding CalcResHeight, UpdateSourceTrigger=PropertyChanged}" />
+                                                    </StackPanel>
+
+                                                    <StackPanel Margin="0,0,12,4">
+                                                        <TextBlock Text="Inset Margin (px):" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" />
+                                                        <TextBox Width="60" Text="{Binding CalcMargin, UpdateSourceTrigger=PropertyChanged}" />
+                                                    </StackPanel>
+
+                                                    <Button Content="Calculate &amp; Apply" Style="{StaticResource AccentButtonStyle}" Command="{Binding CalculateBoundsCommand}" VerticalAlignment="Bottom" Margin="0,0,0,4" />
+                                                </WrapPanel>
+                                            </StackPanel>
+                                        </Border>
+
+                                        <!-- Boundary Coordinate Fields -->
+                                        <UniformGrid Columns="4" Margin="0,0,0,8">
+                                            <StackPanel Margin="4">
+                                                <TextBlock Text="Min X (Left)" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" />
+                                                <TextBox Text="{Binding Settings.ClampMinX, UpdateSourceTrigger=PropertyChanged}" />
+                                            </StackPanel>
+                                            <StackPanel Margin="4">
+                                                <TextBlock Text="Max X (Right)" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" />
+                                                <TextBox Text="{Binding Settings.ClampMaxX, UpdateSourceTrigger=PropertyChanged}" />
+                                            </StackPanel>
+                                            <StackPanel Margin="4">
+                                                <TextBlock Text="Min Y (Top)" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" />
+                                                <TextBox Text="{Binding Settings.ClampMinY, UpdateSourceTrigger=PropertyChanged}" />
+                                            </StackPanel>
+                                            <StackPanel Margin="4">
+                                                <TextBlock Text="Max Y (Bottom)" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" />
+                                                <TextBox Text="{Binding Settings.ClampMaxY, UpdateSourceTrigger=PropertyChanged}" />
+                                            </StackPanel>
+                                        </UniformGrid>
+
+                                        <CheckBox Content="Enable Line 19 Mouse Clamping" IsChecked="{Binding Settings.ClampEnabled, Mode=TwoWay}" Margin="4,4,0,0" />
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- Line 36: Clamp Toggle Key -->
+                                <Border Style="{StaticResource SettingCard}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="240" />
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel VerticalAlignment="Center" Margin="0,0,12,0">
+                                            <StackPanel Orientation="Horizontal">
+                                                <Border Style="{StaticResource LineBadge}"><TextBlock Text="LINE 36" Style="{StaticResource LineBadgeText}" /></Border>
+                                                <TextBlock Text="Screen Clamp Toggle Key" Style="{StaticResource SettingTitle}" />
+                                            </StackPanel>
+                                            <TextBlock Text="Virtual key code to toggle Line 19 screen clamp on/off on the fly." Style="{StaticResource SettingDesc}" />
+                                        </StackPanel>
+                                        <controls:KeyPickerControl Grid.Column="1" KeyCode="{Binding Settings.ClampToggleKey, Mode=TwoWay}" />
+                                    </Grid>
+                                </Border>
+
+                                <!-- Line 31: Mouse Smoothing Value -->
+                                <Border Style="{StaticResource SettingCard}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="100" />
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel VerticalAlignment="Center" Margin="0,0,12,0">
+                                            <StackPanel Orientation="Horizontal">
+                                                <Border Style="{StaticResource LineBadge}"><TextBlock Text="LINE 31" Style="{StaticResource LineBadgeText}" /></Border>
+                                                <TextBlock Text="Mouse Smoothing Value" Style="{StaticResource SettingTitle}" />
+                                            </StackPanel>
+                                            <TextBlock Text="Lower number = smoother mouse path. 0 = disabled. Around 200 is recommended to evade bot detection." Style="{StaticResource SettingDesc}" />
+                                        </StackPanel>
+                                        <TextBox Grid.Column="1" Text="{Binding Settings.MouseSmoothing, UpdateSourceTrigger=PropertyChanged}" TextAlignment="Center" />
+                                    </Grid>
+                                </Border>
+
+                                <!-- Line 32: Window Center Y Adjustment -->
+                                <Border Style="{StaticResource SettingCard}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="100" />
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel VerticalAlignment="Center" Margin="0,0,12,0">
+                                            <StackPanel Orientation="Horizontal">
+                                                <Border Style="{StaticResource LineBadge}"><TextBlock Text="LINE 32" Style="{StaticResource LineBadgeText}" /></Border>
+                                                <TextBlock Text="Window Center Y Adjustment" Style="{StaticResource SettingTitle}" />
+                                            </StackPanel>
+                                            <TextBlock Text="Adjusts what speeder considers the vertical center of the window relative to your character." Style="{StaticResource SettingDesc}" />
+                                        </StackPanel>
+                                        <TextBox Grid.Column="1" Text="{Binding Settings.WindowCenterYAdjustment, StringFormat='{}{0:0.##}', UpdateSourceTrigger=PropertyChanged}" TextAlignment="Center" />
+                                    </Grid>
+                                </Border>
+
+                                <!-- Line 33: Multiplier for -gpc Command -->
+                                <Border Style="{StaticResource SettingCard}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="100" />
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel VerticalAlignment="Center" Margin="0,0,12,0">
+                                            <StackPanel Orientation="Horizontal">
+                                                <Border Style="{StaticResource LineBadge}"><TextBlock Text="LINE 33" Style="{StaticResource LineBadgeText}" /></Border>
+                                                <TextBlock Text="DPI Scaling Multiplier (-gpc / gp keys)" Style="{StaticResource SettingTitle}" />
+                                            </StackPanel>
+                                            <TextBlock Text="Screen DPI/scaling multiplier for pixel color retrieval (e.g., 1 for 100%, 2 for 4K / 200% scale)." Style="{StaticResource SettingDesc}" />
+                                        </StackPanel>
+                                        <TextBox Grid.Column="1" Text="{Binding Settings.GpcMultiplier, StringFormat='{}{0:0.##}', UpdateSourceTrigger=PropertyChanged}" TextAlignment="Center" />
+                                    </Grid>
+                                </Border>
+                            </StackPanel>
+                        </ScrollViewer>
+                    </TabItem>
+
+                    <!-- ================= TAB 5: DETECTION & ALERTS ================= -->
+                    <TabItem Header="🔔 Detection &amp; Alerts">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="4,8,8,4">
+                            <StackPanel>
+                                <!-- Line 37: Player Detection Builder -->
+                                <Border Style="{StaticResource SettingCard}">
+                                    <StackPanel>
+                                        <StackPanel Orientation="Horizontal">
+                                            <Border Style="{StaticResource LineBadge}"><TextBlock Text="LINE 37" Style="{StaticResource LineBadgeText}" /></Border>
+                                            <TextBlock Text="Nearby Player Proximity Detection" Style="{StaticResource SettingTitle}" />
+                                        </StackPanel>
+                                        <TextBlock Text="Triggers a system command or alarm sound when players enter your area. Party members are automatically ignored." Style="{StaticResource SettingDesc}" />
+
+                                        <UniformGrid Columns="3" Margin="0,6,0,8">
+                                            <StackPanel Margin="4">
+                                                <TextBlock Text="Min Players To Trigger" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" />
+                                                <TextBox Text="{Binding Settings.DetectionMinPlayers, UpdateSourceTrigger=PropertyChanged}" />
+                                            </StackPanel>
+                                            <StackPanel Margin="4">
+                                                <TextBlock Text="Max Distance (0 = Infinite)" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" />
+                                                <TextBox Text="{Binding Settings.DetectionMaxDistance, StringFormat='{}{0:0.##}', UpdateSourceTrigger=PropertyChanged}" />
+                                            </StackPanel>
+                                            <StackPanel Margin="4">
+                                                <TextBlock Text="Check Timer (ms)" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" />
+                                                <TextBox Text="{Binding Settings.DetectionTimerMs, UpdateSourceTrigger=PropertyChanged}" />
+                                            </StackPanel>
+                                        </UniformGrid>
+
+                                        <TextBlock Text="System Command (Windows cmd / program to launch):" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Margin="4,0,0,2" />
+                                        <TextBox Text="{Binding Settings.DetectionSystemCommand, UpdateSourceTrigger=PropertyChanged}" Margin="4,0,4,8" />
+
+                                        <!-- Preset command buttons -->
+                                        <WrapPanel Margin="4,0,4,0">
+                                            <TextBlock Text="Command Presets: " VerticalAlignment="Center" FontSize="11" Foreground="{StaticResource TextMutedBrush}" Margin="0,0,6,0" />
+                                            <Button Content="🔊 Windows Sound (PowerShell)" Command="{Binding ApplyPowershellSoundPresetCommand}" Margin="2" Padding="6,3" FontSize="11" />
+                                            <Button Content="🎵 VLC Audio Player Command" Command="{Binding ApplyVlcPresetCommand}" Margin="2" Padding="6,3" FontSize="11" />
+                                        </WrapPanel>
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- Line 45: Player Detection Toggle Key -->
+                                <Border Style="{StaticResource SettingCard}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="240" />
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel VerticalAlignment="Center" Margin="0,0,12,0">
+                                            <StackPanel Orientation="Horizontal">
+                                                <Border Style="{StaticResource LineBadge}"><TextBlock Text="LINE 45" Style="{StaticResource LineBadgeText}" /></Border>
+                                                <TextBlock Text="Player Detection Alarm Toggle Key" Style="{StaticResource SettingTitle}" />
+                                            </StackPanel>
+                                            <TextBlock Text="Virtual key code to toggle Line 37 proximity checks on or off." Style="{StaticResource SettingDesc}" />
+                                        </StackPanel>
+                                        <controls:KeyPickerControl Grid.Column="1" KeyCode="{Binding Settings.PlayerDetectionToggleKey, Mode=TwoWay}" />
+                                    </Grid>
+                                </Border>
+
+                                <!-- Line 39: Output New Players to Console -->
+                                <Border Style="{StaticResource SettingCard}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel VerticalAlignment="Center" Margin="0,0,12,0">
+                                            <StackPanel Orientation="Horizontal">
+                                                <Border Style="{StaticResource LineBadge}"><TextBlock Text="LINE 39" Style="{StaticResource LineBadgeText}" /></Border>
+                                                <TextBlock Text="Log New Players to Speeder Console" Style="{StaticResource SettingTitle}" />
+                                            </StackPanel>
+                                            <TextBlock Text="If 1, any newly discovered player appearing in memory will print to console." Style="{StaticResource SettingDesc}" />
+                                        </StackPanel>
+                                        <CheckBox Grid.Column="1" Content="Log New Players" IsChecked="{Binding Settings.OutputNewPlayersToConsole, Mode=TwoWay}" />
+                                    </Grid>
+                                </Border>
+                            </StackPanel>
+                        </ScrollViewer>
+                    </TabItem>
+
+                    <!-- ================= TAB 6: RADAR & ESP OVERLAYS ================= -->
+                    <TabItem Header="🗺️ Radar &amp; ESP">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="4,8,8,4">
+                            <StackPanel>
+                                <!-- Line 48: ESP & Radar Global Scaling -->
+                                <Border Style="{StaticResource SettingCard}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="100" />
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel VerticalAlignment="Center" Margin="0,0,12,0">
+                                            <StackPanel Orientation="Horizontal">
+                                                <Border Style="{StaticResource LineBadge}"><TextBlock Text="LINE 48" Style="{StaticResource LineBadgeText}" /></Border>
+                                                <TextBlock Text="ESP &amp; Radar Scaling Factor" Style="{StaticResource SettingTitle}" />
+                                            </StackPanel>
+                                            <TextBlock Text="Default is 1. Increase to 2+ to dramatically boost FPS if experiencing performance drops." Style="{StaticResource SettingDesc}" />
+                                        </StackPanel>
+                                        <TextBox Grid.Column="1" Text="{Binding Settings.EspRadarScaling, StringFormat='{}{0:0.##}', UpdateSourceTrigger=PropertyChanged}" TextAlignment="Center" />
+                                    </Grid>
+                                </Border>
+
+                                <!-- Line 43: Radar Configuration -->
+                                <Border Style="{StaticResource SettingCard}">
+                                    <StackPanel>
+                                        <Grid Margin="0,0,0,8">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+                                            <StackPanel VerticalAlignment="Center">
+                                                <StackPanel Orientation="Horizontal">
+                                                    <Border Style="{StaticResource LineBadge}"><TextBlock Text="LINE 43" Style="{StaticResource LineBadgeText}" /></Border>
+                                                    <TextBlock Text="2D Radar Window Settings" Style="{StaticResource SectionHeader}" Foreground="{StaticResource TextPrimaryBrush}" Margin="0" />
+                                                </StackPanel>
+                                                <TextBlock Text="Leaves Line 43 blank if disabled." Style="{StaticResource SettingDesc}" Margin="0,2,0,0" />
+                                            </StackPanel>
+                                            <CheckBox Grid.Column="1" Content="Enable Radar" IsChecked="{Binding Settings.RadarEnabled, Mode=TwoWay}" FontWeight="Bold" />
+                                        </Grid>
+
+                                        <!-- Radar Controls (Visible when enabled) -->
+                                        <StackPanel Visibility="{Binding Settings.RadarEnabled, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                            <!-- Window Position & Geometry -->
+                                            <UniformGrid Columns="5" Margin="0,4,0,8">
+                                                <StackPanel Margin="3">
+                                                    <TextBlock Text="Pos X" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" />
+                                                    <TextBox Text="{Binding Settings.RadarPosX, UpdateSourceTrigger=PropertyChanged}" />
+                                                </StackPanel>
+                                                <StackPanel Margin="3">
+                                                    <TextBlock Text="Pos Y" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" />
+                                                    <TextBox Text="{Binding Settings.RadarPosY, UpdateSourceTrigger=PropertyChanged}" />
+                                                </StackPanel>
+                                                <StackPanel Margin="3">
+                                                    <TextBlock Text="Width" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" />
+                                                    <TextBox Text="{Binding Settings.RadarWidth, UpdateSourceTrigger=PropertyChanged}" />
+                                                </StackPanel>
+                                                <StackPanel Margin="3">
+                                                    <TextBlock Text="Height" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" />
+                                                    <TextBox Text="{Binding Settings.RadarHeight, UpdateSourceTrigger=PropertyChanged}" />
+                                                </StackPanel>
+                                                <StackPanel Margin="3">
+                                                    <TextBlock Text="Radar ID" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" />
+                                                    <TextBox Text="{Binding Settings.RadarId, UpdateSourceTrigger=PropertyChanged}" />
+                                                </StackPanel>
+                                            </UniformGrid>
+
+                                            <UniformGrid Columns="4" Margin="0,0,0,8">
+                                                <StackPanel Margin="3">
+                                                    <TextBlock Text="Max Entities" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" />
+                                                    <TextBox Text="{Binding Settings.RadarTotalEntities, UpdateSourceTrigger=PropertyChanged}" />
+                                                </StackPanel>
+                                                <StackPanel Margin="3">
+                                                    <TextBlock Text="Font Size" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" />
+                                                    <TextBox Text="{Binding Settings.RadarFontSize, UpdateSourceTrigger=PropertyChanged}" />
+                                                </StackPanel>
+                                                <StackPanel Margin="3">
+                                                    <TextBlock Text="Distance Multiplier" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" />
+                                                    <TextBox Text="{Binding Settings.RadarDistanceMultiplier, StringFormat='{}{0:0.##}', UpdateSourceTrigger=PropertyChanged}" />
+                                                </StackPanel>
+                                                <StackPanel Margin="3">
+                                                    <TextBlock Text="Refresh Rate (ms)" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" />
+                                                    <TextBox Text="{Binding Settings.RadarRefreshRate, UpdateSourceTrigger=PropertyChanged}" />
+                                                </StackPanel>
+                                            </UniformGrid>
+
+                                            <!-- Display Toggles -->
+                                            <WrapPanel Margin="0,4,0,8">
+                                                <CheckBox Content="Show Mobs" IsChecked="{Binding Settings.RadarShowMobs, Mode=TwoWay}" Margin="0,0,16,4" />
+                                                <CheckBox Content="Show Players" IsChecked="{Binding Settings.RadarShowPlayers, Mode=TwoWay}" Margin="0,0,16,4" />
+                                                <CheckBox Content="Show Gathering" IsChecked="{Binding Settings.RadarShowGathering, Mode=TwoWay}" Margin="0,0,16,4" />
+                                                <CheckBox Content="Transparent Window" IsChecked="{Binding Settings.RadarTransparent, Mode=TwoWay}" Margin="0,0,16,4" />
+                                                <CheckBox Content="Always On Top" IsChecked="{Binding Settings.RadarAlwaysOnTop, Mode=TwoWay}" Margin="0,0,16,4" />
+                                            </WrapPanel>
+
+                                            <!-- Radar Colors -->
+                                            <TextBlock Text="Radar Colors (Decimal RGB):" FontSize="11.5" FontWeight="SemiBold" Foreground="{StaticResource AccentBrush}" Margin="0,4,0,4" />
+                                            <UniformGrid Columns="2">
+                                                <StackPanel Margin="4">
+                                                    <TextBlock Text="Background Color:" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,2" />
+                                                    <controls:ColorPickerControl ColorValue="{Binding Settings.RadarBgColor, Mode=TwoWay}" />
+                                                </StackPanel>
+                                                <StackPanel Margin="4">
+                                                    <TextBlock Text="Mob Color:" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,2" />
+                                                    <controls:ColorPickerControl ColorValue="{Binding Settings.RadarMobColor, Mode=TwoWay}" />
+                                                </StackPanel>
+                                                <StackPanel Margin="4">
+                                                    <TextBlock Text="Player Color (Outside Party):" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,2" />
+                                                    <controls:ColorPickerControl ColorValue="{Binding Settings.RadarPlayerColorOutside, Mode=TwoWay}" />
+                                                </StackPanel>
+                                                <StackPanel Margin="4">
+                                                    <TextBlock Text="Player Color (Inside Party):" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,2" />
+                                                    <controls:ColorPickerControl ColorValue="{Binding Settings.RadarPlayerColorInside, Mode=TwoWay}" />
+                                                </StackPanel>
+                                                <StackPanel Margin="4">
+                                                    <TextBlock Text="Gathering Node Color:" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,2" />
+                                                    <controls:ColorPickerControl ColorValue="{Binding Settings.RadarGatheringColor, Mode=TwoWay}" />
+                                                </StackPanel>
+                                                <StackPanel Margin="4">
+                                                    <TextBlock Text="Center Indicator Char:" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,2" />
+                                                    <TextBox Text="{Binding Settings.RadarCenterIndicator, UpdateSourceTrigger=PropertyChanged}" Height="34" />
+                                                </StackPanel>
+                                            </UniformGrid>
+                                        </StackPanel>
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- Line 46: ESP Configuration -->
+                                <Border Style="{StaticResource SettingCard}">
+                                    <StackPanel>
+                                        <Grid Margin="0,0,0,8">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+                                            <StackPanel VerticalAlignment="Center">
+                                                <StackPanel Orientation="Horizontal">
+                                                    <Border Style="{StaticResource LineBadge}"><TextBlock Text="LINE 46" Style="{StaticResource LineBadgeText}" /></Border>
+                                                    <TextBlock Text="3D Screen ESP Overlay Settings" Style="{StaticResource SectionHeader}" Foreground="{StaticResource TextPrimaryBrush}" Margin="0" />
+                                                </StackPanel>
+                                                <TextBlock Text="Leaves Line 46 blank if disabled." Style="{StaticResource SettingDesc}" Margin="0,2,0,0" />
+                                            </StackPanel>
+                                            <CheckBox Grid.Column="1" Content="Enable ESP" IsChecked="{Binding Settings.EspEnabled, Mode=TwoWay}" FontWeight="Bold" />
+                                        </Grid>
+
+                                        <StackPanel Visibility="{Binding Settings.EspEnabled, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                            <UniformGrid Columns="4" Margin="0,4,0,8">
+                                                <StackPanel Margin="3">
+                                                    <TextBlock Text="Total Entities" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" />
+                                                    <TextBox Text="{Binding Settings.EspTotalEntities, UpdateSourceTrigger=PropertyChanged}" />
+                                                </StackPanel>
+                                                <StackPanel Margin="3">
+                                                    <TextBlock Text="Font Size" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" />
+                                                    <TextBox Text="{Binding Settings.EspFontSize, UpdateSourceTrigger=PropertyChanged}" />
+                                                </StackPanel>
+                                                <StackPanel Margin="3">
+                                                    <TextBlock Text="Refresh Rate (ms)" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" />
+                                                    <TextBox Text="{Binding Settings.EspRefreshRate, UpdateSourceTrigger=PropertyChanged}" />
+                                                </StackPanel>
+                                                <StackPanel Margin="3">
+                                                    <TextBlock Text="Font Family" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" />
+                                                    <TextBox Text="{Binding Settings.EspFont, UpdateSourceTrigger=PropertyChanged}" />
+                                                </StackPanel>
+                                            </UniformGrid>
+
+                                            <!-- ESP Show Toggles -->
+                                            <WrapPanel Margin="0,4,0,8">
+                                                <CheckBox Content="Show Mobs" IsChecked="{Binding Settings.EspShowMobs, Mode=TwoWay}" Margin="0,0,16,4" />
+                                                <CheckBox Content="Show Players" IsChecked="{Binding Settings.EspShowPlayers, Mode=TwoWay}" Margin="0,0,16,4" />
+                                                <CheckBox Content="Show Gathering" IsChecked="{Binding Settings.EspShowGathering, Mode=TwoWay}" Margin="0,0,16,4" />
+                                            </WrapPanel>
+
+                                            <!-- ESP Colors -->
+                                            <TextBlock Text="ESP Colors (Decimal RGB):" FontSize="11.5" FontWeight="SemiBold" Foreground="{StaticResource AccentBrush}" Margin="0,4,0,4" />
+                                            <UniformGrid Columns="2">
+                                                <StackPanel Margin="4">
+                                                    <TextBlock Text="Mob Color:" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,2" />
+                                                    <controls:ColorPickerControl ColorValue="{Binding Settings.EspMobColor, Mode=TwoWay}" />
+                                                </StackPanel>
+                                                <StackPanel Margin="4">
+                                                    <TextBlock Text="Player Color (Outside Party):" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,2" />
+                                                    <controls:ColorPickerControl ColorValue="{Binding Settings.EspPlayerColorOutside, Mode=TwoWay}" />
+                                                </StackPanel>
+                                                <StackPanel Margin="4">
+                                                    <TextBlock Text="Player Color (Inside Party):" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,2" />
+                                                    <controls:ColorPickerControl ColorValue="{Binding Settings.EspPlayerColorInside, Mode=TwoWay}" />
+                                                </StackPanel>
+                                                <StackPanel Margin="4">
+                                                    <TextBlock Text="Gathering Color:" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,2" />
+                                                    <controls:ColorPickerControl ColorValue="{Binding Settings.EspGatheringColor, Mode=TwoWay}" />
+                                                </StackPanel>
+                                            </UniformGrid>
+                                        </StackPanel>
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- Line 47: ESP 3D Targeting & Coordinate Projection -->
+                                <Border Style="{StaticResource SettingCard}">
+                                    <StackPanel>
+                                        <StackPanel Orientation="Horizontal">
+                                            <Border Style="{StaticResource LineBadge}"><TextBlock Text="LINE 47" Style="{StaticResource LineBadgeText}" /></Border>
+                                            <TextBlock Text="ESP &amp; Cursor Targeting 3D Projection (FOV|Yaw|Pitch)" Style="{StaticResource SettingTitle}" />
+                                        </StackPanel>
+                                        <TextBlock Text="Translates 3D game coordinates to 2D screen coordinates. Increase FOV (e.g. 80) if Line 21 FOV is zoomed out." Style="{StaticResource SettingDesc}" />
+
+                                        <UniformGrid Columns="3" Margin="0,4,0,0">
+                                            <StackPanel Margin="4">
+                                                <TextBlock Text="Targeting FOV (default 46.5)" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" />
+                                                <TextBox Text="{Binding Settings.EspTargetingFov, StringFormat='{}{0:0.##}', UpdateSourceTrigger=PropertyChanged}" />
+                                            </StackPanel>
+                                            <StackPanel Margin="4">
+                                                <TextBlock Text="Camera Yaw Adj. (default 7.0)" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" />
+                                                <TextBox Text="{Binding Settings.EspCameraYaw, StringFormat='{}{0:0.##}', UpdateSourceTrigger=PropertyChanged}" />
+                                            </StackPanel>
+                                            <StackPanel Margin="4">
+                                                <TextBlock Text="Camera Pitch Adj. (default 0.02)" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" />
+                                                <TextBox Text="{Binding Settings.EspCameraPitch, StringFormat='{}{0:0.###}', UpdateSourceTrigger=PropertyChanged}" />
+                                            </StackPanel>
+                                        </UniformGrid>
+                                    </StackPanel>
+                                </Border>
+                            </StackPanel>
+                        </ScrollViewer>
+                    </TabItem>
+
+                    <!-- ================= TAB 7: FILTERS & CUSTOM COLORS ================= -->
+                    <TabItem Header="🎨 Filters &amp; Colors">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="4,8,8,4">
+                            <StackPanel>
+                                <!-- Line 50: Mounted Player Colorizer -->
+                                <Border Style="{StaticResource SettingCard}">
+                                    <StackPanel>
+                                        <StackPanel Orientation="Horizontal">
+                                            <Border Style="{StaticResource LineBadge}"><TextBlock Text="LINE 50" Style="{StaticResource LineBadgeText}" /></Border>
+                                            <TextBlock Text="Mounted &amp; Recently Dismounted Player Highlighter" Style="{StaticResource SettingTitle}" />
+                                        </StackPanel>
+                                        <TextBlock Text="Colorizes mounted players on radar/ESP, and retains highlight for duration ms to show dismount debuff." Style="{StaticResource SettingDesc}" />
+
+                                        <Grid Margin="0,6,0,0">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto" />
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="140" />
+                                            </Grid.ColumnDefinitions>
+                                            <CheckBox Content="Active" IsChecked="{Binding Settings.MountedPlayerHighlightActive, Mode=TwoWay}" VerticalAlignment="Center" Margin="0,0,12,0" />
+                                            <controls:ColorPickerControl Grid.Column="1" ColorValue="{Binding Settings.MountedPlayerColor, Mode=TwoWay}" Margin="0,0,12,0" />
+                                            <StackPanel Grid.Column="2" VerticalAlignment="Center">
+                                                <TextBlock Text="Dismount Delay (ms):" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" />
+                                                <TextBox Text="{Binding Settings.MountedPlayerDelayMs, UpdateSourceTrigger=PropertyChanged}" />
+                                            </StackPanel>
+                                        </Grid>
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- Line 49: Gathering Object Filters -->
+                                <Border Style="{StaticResource SettingCard}">
+                                    <StackPanel>
+                                        <Grid Margin="0,0,0,6">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+                                            <StackPanel VerticalAlignment="Center">
+                                                <StackPanel Orientation="Horizontal">
+                                                    <Border Style="{StaticResource LineBadge}"><TextBlock Text="LINE 49" Style="{StaticResource LineBadgeText}" /></Border>
+                                                    <TextBlock Text="Gathering Resource Filters (Radar &amp; ESP)" Style="{StaticResource SettingTitle}" />
+                                                </StackPanel>
+                                                <TextBlock Text="Processed left-to-right. Setting color to 0 hides the object. Syntax: Name,Color,MinTier,MinRarity" Style="{StaticResource SettingDesc}" Margin="0,2,0,0" />
+                                            </StackPanel>
+                                            <StackPanel Grid.Column="1" Orientation="Horizontal">
+                                                <Button Content="➕ Add Rule" Command="{Binding AddGatheringFilterCommand}" Margin="0,0,6,0" Padding="8,4" FontSize="11" />
+                                                <Button Content="➖ Remove" Command="{Binding RemoveGatheringFilterCommand}" Style="{StaticResource DangerButtonStyle}" Padding="8,4" FontSize="11" />
+                                            </StackPanel>
+                                        </Grid>
+
+                                        <DataGrid ItemsSource="{Binding Settings.GatheringFilters}"
+                                                  SelectedItem="{Binding SelectedGatheringFilter, Mode=TwoWay}"
+                                                  MaxHeight="190"
+                                                  Margin="0,4,0,0">
+                                            <DataGrid.Columns>
+                                                <DataGridTextColumn Header="Resource Name (WOOD, FIBER...)" Binding="{Binding ResourceName, UpdateSourceTrigger=PropertyChanged}" Width="160" />
+                                                <DataGridTextColumn Header="Decimal Color (0 = Hide)" Binding="{Binding ColorValue, UpdateSourceTrigger=PropertyChanged}" Width="150" />
+                                                <DataGridTemplateColumn Header="Color Swatch" Width="90">
+                                                    <DataGridTemplateColumn.CellTemplate>
+                                                        <DataTemplate>
+                                                            <Border Background="{Binding PreviewBrush}" BorderBrush="#52525b" BorderThickness="1" Width="40" Height="18" CornerRadius="3" />
+                                                        </DataTemplate>
+                                                    </DataGridTemplateColumn.CellTemplate>
+                                                </DataGridTemplateColumn>
+                                                <DataGridTextColumn Header="Min Tier" Binding="{Binding MinTier, UpdateSourceTrigger=PropertyChanged}" Width="80" />
+                                                <DataGridTextColumn Header="Min Rarity" Binding="{Binding MinRarity, UpdateSourceTrigger=PropertyChanged}" Width="80" />
+                                                <DataGridCheckBoxColumn Header="Hide (Color=0)" Binding="{Binding HideResource, UpdateSourceTrigger=PropertyChanged}" Width="100" />
+                                            </DataGrid.Columns>
+                                        </DataGrid>
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- Line 51: Custom Mob Name Color Filters -->
+                                <Border Style="{StaticResource SettingCard}">
+                                    <StackPanel>
+                                        <Grid Margin="0,0,0,6">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+                                            <StackPanel VerticalAlignment="Center">
+                                                <StackPanel Orientation="Horizontal">
+                                                    <Border Style="{StaticResource LineBadge}"><TextBlock Text="LINE 51" Style="{StaticResource LineBadgeText}" /></Border>
+                                                    <TextBlock Text="Mob Name Color Filters" Style="{StaticResource SettingTitle}" />
+                                                </StackPanel>
+                                                <TextBlock Text="Colorize specific mobs by name. Color 0 removes them from radar/ESP. Partial matches work." Style="{StaticResource SettingDesc}" Margin="0,2,0,0" />
+                                            </StackPanel>
+                                            <StackPanel Grid.Column="1" Orientation="Horizontal">
+                                                <Button Content="➕ Add Mob" Command="{Binding AddMobFilterCommand}" Margin="0,0,6,0" Padding="8,4" FontSize="11" />
+                                                <Button Content="➖ Remove" Command="{Binding RemoveMobFilterCommand}" Style="{StaticResource DangerButtonStyle}" Padding="8,4" FontSize="11" />
+                                            </StackPanel>
+                                        </Grid>
+
+                                        <DataGrid ItemsSource="{Binding Settings.MobColorFilters}"
+                                                  SelectedItem="{Binding SelectedMobFilter, Mode=TwoWay}"
+                                                  MaxHeight="160"
+                                                  Margin="0,4,0,0">
+                                            <DataGrid.Columns>
+                                                <DataGridTextColumn Header="Mob Name (e.g. T2_MOB_HIDE_SNAKE)" Binding="{Binding MobName, UpdateSourceTrigger=PropertyChanged}" Width="250" />
+                                                <DataGridTextColumn Header="Decimal Color (0 = Hide)" Binding="{Binding ColorValue, UpdateSourceTrigger=PropertyChanged}" Width="160" />
+                                                <DataGridTemplateColumn Header="Color Swatch" Width="90">
+                                                    <DataGridTemplateColumn.CellTemplate>
+                                                        <DataTemplate>
+                                                            <Border Background="{Binding PreviewBrush}" BorderBrush="#52525b" BorderThickness="1" Width="40" Height="18" CornerRadius="3" />
+                                                        </DataTemplate>
+                                                    </DataGridTemplateColumn.CellTemplate>
+                                                </DataGridTemplateColumn>
+                                                <DataGridCheckBoxColumn Header="Hide Mob" Binding="{Binding HideMob, UpdateSourceTrigger=PropertyChanged}" Width="90" />
+                                            </DataGrid.Columns>
+                                        </DataGrid>
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- Line 55: Minimum Mob HP Threshold -->
+                                <Border Style="{StaticResource SettingCard}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="140" />
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel VerticalAlignment="Center" Margin="0,0,12,0">
+                                            <StackPanel Orientation="Horizontal">
+                                                <Border Style="{StaticResource LineBadge}"><TextBlock Text="LINE 55" Style="{StaticResource LineBadgeText}" /></Border>
+                                                <TextBlock Text="Minimum Mob Max-HP Threshold" Style="{StaticResource SettingTitle}" />
+                                            </StackPanel>
+                                            <TextBlock Text="Any mob whose max HP is less than this number will not show on ESP or radar (removes unwanted trash mobs)." Style="{StaticResource SettingDesc}" />
+                                        </StackPanel>
+                                        <TextBox Grid.Column="1" Text="{Binding Settings.MobMinHpThreshold, UpdateSourceTrigger=PropertyChanged}" TextAlignment="Center" />
+                                    </Grid>
+                                </Border>
+                            </StackPanel>
+                        </ScrollViewer>
+                    </TabItem>
+
+                    <!-- ================= TAB 8: DISPLAY TEXT & FORMATTING ================= -->
+                    <TabItem Header="🏷️ Labels &amp; Text">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="4,8,8,4">
+                            <StackPanel>
+                                <TextBlock Text="Custom Display Text Templates" Style="{StaticResource SectionHeader}" />
+                                <TextBlock Text="Controls the dynamic text overlaid on top of entities in both ESP and Radar. Use wildcards to format labels." Style="{StaticResource SettingDesc}" Margin="0,-6,0,12" />
+
+                                <!-- Line 52: Player Display Text -->
+                                <Border Style="{StaticResource SettingCard}">
+                                    <StackPanel>
+                                        <StackPanel Orientation="Horizontal">
+                                            <Border Style="{StaticResource LineBadge}"><TextBlock Text="LINE 52" Style="{StaticResource LineBadgeText}" /></Border>
+                                            <TextBlock Text="Player Display Text (ESP | Radar)" Style="{StaticResource SettingTitle}" />
+                                        </StackPanel>
+                                        <TextBlock Text="Wildcards: %hp% (Current HP), %dist% (Distance from character)." Style="{StaticResource SettingDesc}" />
+
+                                        <Grid Margin="0,4,0,4">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="*" />
+                                            </Grid.ColumnDefinitions>
+                                            <StackPanel Margin="4">
+                                                <TextBlock Text="ESP Player Text:" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" />
+                                                <TextBox Text="{Binding Settings.PlayerEspText, UpdateSourceTrigger=PropertyChanged}" />
+                                            </StackPanel>
+                                            <StackPanel Margin="4">
+                                                <TextBlock Text="Radar Player Text:" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" />
+                                                <TextBox Text="{Binding Settings.PlayerRadarText, UpdateSourceTrigger=PropertyChanged}" />
+                                            </StackPanel>
+                                        </Grid>
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- Line 53: Gathering Display Text -->
+                                <Border Style="{StaticResource SettingCard}">
+                                    <StackPanel>
+                                        <StackPanel Orientation="Horizontal">
+                                            <Border Style="{StaticResource LineBadge}"><TextBlock Text="LINE 53" Style="{StaticResource LineBadgeText}" /></Border>
+                                            <TextBlock Text="Gathering Object Display Text (ESP | Radar)" Style="{StaticResource SettingTitle}" />
+                                        </StackPanel>
+                                        <TextBlock Text="Wildcards: %name% (Node name), %num% (Remaining charges), %dist% (Distance), %tier% (Tier), %rare% (Rarity)." Style="{StaticResource SettingDesc}" />
+
+                                        <Grid Margin="0,4,0,4">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="*" />
+                                            </Grid.ColumnDefinitions>
+                                            <StackPanel Margin="4">
+                                                <TextBlock Text="ESP Gathering Text:" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" />
+                                                <TextBox Text="{Binding Settings.GatheringEspText, UpdateSourceTrigger=PropertyChanged}" />
+                                            </StackPanel>
+                                            <StackPanel Margin="4">
+                                                <TextBlock Text="Radar Gathering Text:" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" />
+                                                <TextBox Text="{Binding Settings.GatheringRadarText, UpdateSourceTrigger=PropertyChanged}" />
+                                            </StackPanel>
+                                        </Grid>
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- Line 54: Mob Display Text -->
+                                <Border Style="{StaticResource SettingCard}">
+                                    <StackPanel>
+                                        <StackPanel Orientation="Horizontal">
+                                            <Border Style="{StaticResource LineBadge}"><TextBlock Text="LINE 54" Style="{StaticResource LineBadgeText}" /></Border>
+                                            <TextBlock Text="Mob Display Text (ESP | Radar)" Style="{StaticResource SettingTitle}" />
+                                        </StackPanel>
+                                        <TextBlock Text="Wildcards: %name% (Mob name), %hp% (Current HP), %dist% (Distance)." Style="{StaticResource SettingDesc}" />
+
+                                        <Grid Margin="0,4,0,4">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="*" />
+                                            </Grid.ColumnDefinitions>
+                                            <StackPanel Margin="4">
+                                                <TextBlock Text="ESP Mob Text:" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" />
+                                                <TextBox Text="{Binding Settings.MobEspText, UpdateSourceTrigger=PropertyChanged}" />
+                                            </StackPanel>
+                                            <StackPanel Margin="4">
+                                                <TextBlock Text="Radar Mob Text:" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" />
+                                                <TextBox Text="{Binding Settings.MobRadarText, UpdateSourceTrigger=PropertyChanged}" />
+                                            </StackPanel>
+                                        </Grid>
+                                    </StackPanel>
+                                </Border>
+                            </StackPanel>
+                        </ScrollViewer>
+                    </TabItem>
+
+                    <!-- ================= TAB 9: WAYMARKS & AUTOMATION ================= -->
+                    <TabItem Header="🚩 Waymarks &amp; Bots">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="4,8,8,4">
+                            <StackPanel>
+                                <!-- Line 22: Waymark Pause/Resume Key -->
+                                <Border Style="{StaticResource SettingCard}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="240" />
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel VerticalAlignment="Center" Margin="0,0,12,0">
+                                            <StackPanel Orientation="Horizontal">
+                                                <Border Style="{StaticResource LineBadge}"><TextBlock Text="LINE 22" Style="{StaticResource LineBadgeText}" /></Border>
+                                                <TextBlock Text="Pause / Resume Waymarks Key" Style="{StaticResource SettingTitle}" />
+                                            </StackPanel>
+                                            <TextBlock Text="Virtual key code to instantly pause or resume -twrepeat and -tw path execution." Style="{StaticResource SettingDesc}" />
+                                        </StackPanel>
+                                        <controls:KeyPickerControl Grid.Column="1" KeyCode="{Binding Settings.WaymarkPauseResumeKey, Mode=TwoWay}" />
+                                    </Grid>
+                                </Border>
+
+                                <!-- Line 27: Record Coordinates Key (-cl) -->
+                                <Border Style="{StaticResource SettingCard}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="240" />
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel VerticalAlignment="Center" Margin="0,0,12,0">
+                                            <StackPanel Orientation="Horizontal">
+                                                <Border Style="{StaticResource LineBadge}"><TextBlock Text="LINE 27" Style="{StaticResource LineBadgeText}" /></Border>
+                                                <TextBlock Text="Record Coordinates Key (-cl trigger)" Style="{StaticResource SettingTitle}" />
+                                            </StackPanel>
+                                            <TextBlock Text="Copies current coordinates to clipboard and writes waypoint to Recorded Waymarks.ini." Style="{StaticResource SettingDesc}" />
+                                        </StackPanel>
+                                        <controls:KeyPickerControl Grid.Column="1" KeyCode="{Binding Settings.RecordCoordinatesKey, Mode=TwoWay}" />
+                                    </Grid>
+                                </Border>
+
+                                <!-- Line 23: Waymark Arrival Tolerance -->
+                                <Border Style="{StaticResource SettingCard}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="100" />
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel VerticalAlignment="Center" Margin="0,0,12,0">
+                                            <StackPanel Orientation="Horizontal">
+                                                <Border Style="{StaticResource LineBadge}"><TextBlock Text="LINE 23" Style="{StaticResource LineBadgeText}" /></Border>
+                                                <TextBlock Text="Waymark Arrival Tolerance" Style="{StaticResource SettingTitle}" />
+                                            </StackPanel>
+                                            <TextBlock Text="How close character must be before moving to next waymark (default ~3)." Style="{StaticResource SettingDesc}" />
+                                        </StackPanel>
+                                        <TextBox Grid.Column="1" Text="{Binding Settings.WaymarkArrivalTolerance, StringFormat='{}{0:0.##}', UpdateSourceTrigger=PropertyChanged}" TextAlignment="Center" />
+                                    </Grid>
+                                </Border>
+
+                                <!-- Line 24: Sleep Randomness Jitter -->
+                                <Border Style="{StaticResource SettingCard}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="100" />
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel VerticalAlignment="Center" Margin="0,0,12,0">
+                                            <StackPanel Orientation="Horizontal">
+                                                <Border Style="{StaticResource LineBadge}"><TextBlock Text="LINE 24" Style="{StaticResource LineBadgeText}" /></Border>
+                                                <TextBlock Text="Sleep Random Jitter Range (0 to 1)" Style="{StaticResource SettingTitle}" />
+                                            </StackPanel>
+                                            <TextBlock Text="Randomizes waymark sleep pauses (e.g., 0.05 on s2000 yields 1900-2100ms) to evade macro pattern detection." Style="{StaticResource SettingDesc}" />
+                                        </StackPanel>
+                                        <TextBox Grid.Column="1" Text="{Binding Settings.WaymarkSleepJitter, StringFormat='{}{0:0.###}', UpdateSourceTrigger=PropertyChanged}" TextAlignment="Center" />
+                                    </Grid>
+                                </Border>
+
+                                <!-- Line 25: Failsafe Timeout -->
+                                <Border Style="{StaticResource SettingCard}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="100" />
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel VerticalAlignment="Center" Margin="0,0,12,0">
+                                            <StackPanel Orientation="Horizontal">
+                                                <Border Style="{StaticResource LineBadge}"><TextBlock Text="LINE 25" Style="{StaticResource LineBadgeText}" /></Border>
+                                                <TextBlock Text="Failsafe Timeout (Milliseconds)" Style="{StaticResource SettingTitle}" />
+                                            </StackPanel>
+                                            <TextBlock Text="Stops waymark execution if character gets stuck to prevent mouse cursor lockup." Style="{StaticResource SettingDesc}" />
+                                        </StackPanel>
+                                        <TextBox Grid.Column="1" Text="{Binding Settings.WaymarkTimeoutMs, UpdateSourceTrigger=PropertyChanged}" TextAlignment="Center" />
+                                    </Grid>
+                                </Border>
+
+                                <!-- Line 26: Cursor Offset Distance -->
+                                <Border Style="{StaticResource SettingCard}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="100" />
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel VerticalAlignment="Center" Margin="0,0,12,0">
+                                            <StackPanel Orientation="Horizontal">
+                                                <Border Style="{StaticResource LineBadge}"><TextBlock Text="LINE 26" Style="{StaticResource LineBadgeText}" /></Border>
+                                                <TextBlock Text="Cursor Offset Distance (Pixels)" Style="{StaticResource SettingTitle}" />
+                                            </StackPanel>
+                                            <TextBlock Text="How many pixels from character cursor moves for movement clicks (default ~100)." Style="{StaticResource SettingDesc}" />
+                                        </StackPanel>
+                                        <TextBox Grid.Column="1" Text="{Binding Settings.WaymarkCursorOffsetPx, UpdateSourceTrigger=PropertyChanged}" TextAlignment="Center" />
+                                    </Grid>
+                                </Border>
+
+                                <!-- Waymarks Reference Guide -->
+                                <Border Background="{StaticResource SurfaceBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" CornerRadius="6" Padding="14" Margin="0,6,0,0">
+                                    <StackPanel>
+                                        <TextBlock Text="📖 Quick Reference &amp; Console Commands" FontWeight="Bold" Foreground="{StaticResource AccentBrush}" Margin="0,0,0,6" />
+                                        <TextBlock Text="-record 9999,30  → Records waypoints automatically or manually with Line 27 key" FontFamily="Consolas" FontSize="11.5" Foreground="#38bdf8" />
+                                        <TextBlock Text="-tw* Recorded Waymarks.ini  → Follows waypoints sequentially" FontFamily="Consolas" FontSize="11.5" Foreground="#a1a1aa" />
+                                        <TextBlock Text="-twrepeat* waymarkfile.ini  → Loops waypoints infinitely" FontFamily="Consolas" FontSize="11.5" Foreground="#a1a1aa" />
+                                        <TextBlock Text="-cl  → Copies current coordinates to clipboard" FontFamily="Consolas" FontSize="11.5" Foreground="#a1a1aa" />
+                                        <TextBlock Text="-d / -e  → Disable or enable all hacks" FontFamily="Consolas" FontSize="11.5" Foreground="#a1a1aa" />
+                                        <TextBlock Text="-esp / -rad  → Toggle ESP or Radar windows" FontFamily="Consolas" FontSize="11.5" Foreground="#a1a1aa" />
+                                    </StackPanel>
+                                </Border>
+                            </StackPanel>
+                        </ScrollViewer>
+                    </TabItem>
+                </TabControl>
+            </Border>
+
+            <!-- Grid Splitter -->
+            <GridSplitter Grid.Column="1" Width="4" HorizontalAlignment="Center" Background="{StaticResource BorderBrush}" Cursor="SizeWE" />
+
+            <!-- RIGHT: LIVE CONFIG PREVIEW & LINE INSPECTOR -->
+            <Border Grid.Column="2" Background="{StaticResource SurfaceBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1,0,0,0" Padding="14">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+
+                    <!-- Preview Header -->
+                    <Grid Grid.Row="0" Margin="0,0,0,10">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock Text="LIVE CONFIG.TXT PREVIEW" FontWeight="Bold" FontSize="13" Foreground="{StaticResource AccentBrush}" />
+                            <TextBlock Text="Real-time 55-line output synchronized with your changes" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" />
+                        </StackPanel>
+
+                        <!-- View Toggle -->
+                        <Border Grid.Column="1" Background="{StaticResource CardBrush}" CornerRadius="4" Padding="6,2">
+                            <TextBlock Text="55 Lines Verified" FontSize="11" FontWeight="Bold" Foreground="{StaticResource SuccessBrush}" />
+                        </Border>
+                    </Grid>
+
+                    <!-- Live Code Editor / Text Viewer -->
+                    <TabControl Grid.Row="1">
+                        <TabItem Header="Line-Numbered View">
+                            <TextBox Text="{Binding LineNumberedPreview, Mode=OneWay}"
+                                     IsReadOnly="True"
+                                     FontFamily="Consolas, Cascadia Code, Courier New"
+                                     FontSize="11.5"
+                                     Background="#0c121e"
+                                     Foreground="#e2e8f0"
+                                     BorderThickness="0"
+                                     AcceptsReturn="True"
+                                     VerticalScrollBarVisibility="Auto"
+                                     HorizontalScrollBarVisibility="Auto"
+                                     Padding="10" />
+                        </TabItem>
+                        <TabItem Header="Raw config.txt Output">
+                            <TextBox Text="{Binding RawConfigPreview, Mode=OneWay}"
+                                     IsReadOnly="True"
+                                     FontFamily="Consolas, Cascadia Code, Courier New"
+                                     FontSize="12"
+                                     Background="#0c121e"
+                                     Foreground="#38bdf8"
+                                     BorderThickness="0"
+                                     AcceptsReturn="True"
+                                     VerticalScrollBarVisibility="Auto"
+                                     HorizontalScrollBarVisibility="Auto"
+                                     Padding="10" />
+                        </TabItem>
+                    </TabControl>
+
+                    <!-- Bottom Preview Action Bar -->
+                    <Grid Grid.Row="2" Margin="0,10,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+
+                        <Button Content="📋 Copy All Lines" Command="{Binding CopyToClipboardCommand}" Margin="0,0,4,0" />
+                        <Button Grid.Column="1" Content="💾 Save config.txt" Command="{Binding SaveConfigCommand}" Style="{StaticResource AccentButtonStyle}" Margin="4,0,0,0" />
+                    </Grid>
+                </Grid>
+            </Border>
+        </Grid>
+    </Grid>
+</Window>
