@@ -39,3 +39,6 @@ ehthumbs.db
 Desktop.ini
 $RECYCLE.BIN/
 .DS_Store
+
+# Superpowers SDD workspace
+.superpowers/
