@@ -64,6 +64,14 @@ namespace SpeederConfigApp.Models
                 _allKeys.Add(new VirtualKeyInfo { Code = c, Name = $"Key {c}" });
             }
 
+            // Windows / Applications keys
+            _allKeys.AddRange(new[]
+            {
+                new VirtualKeyInfo { Code = 91, Name = "Left Windows" },
+                new VirtualKeyInfo { Code = 92, Name = "Right Windows" },
+                new VirtualKeyInfo { Code = 93, Name = "Menu / Applications" },
+            });
+
             // Numpad 0 - 9
             for (int i = 0; i <= 9; i++)
             {
@@ -89,6 +97,12 @@ namespace SpeederConfigApp.Models
             {
                 new VirtualKeyInfo { Code = 144, Name = "Num Lock" },
                 new VirtualKeyInfo { Code = 145, Name = "Scroll Lock" },
+                new VirtualKeyInfo { Code = 160, Name = "Left Shift" },
+                new VirtualKeyInfo { Code = 161, Name = "Right Shift" },
+                new VirtualKeyInfo { Code = 162, Name = "Left Ctrl" },
+                new VirtualKeyInfo { Code = 163, Name = "Right Ctrl" },
+                new VirtualKeyInfo { Code = 164, Name = "Left Alt" },
+                new VirtualKeyInfo { Code = 165, Name = "Right Alt" },
                 new VirtualKeyInfo { Code = 186, Name = "Semicolon (;)" },
                 new VirtualKeyInfo { Code = 187, Name = "Equals (=)" },
                 new VirtualKeyInfo { Code = 188, Name = "Comma (,)" },
@@ -99,7 +113,9 @@ namespace SpeederConfigApp.Models
                 new VirtualKeyInfo { Code = 219, Name = "Left Bracket ([)" },
                 new VirtualKeyInfo { Code = 220, Name = "Backslash (\\)" },
                 new VirtualKeyInfo { Code = 221, Name = "Right Bracket (])" },
-                new VirtualKeyInfo { Code = 222, Name = "Quote (')" }
+                new VirtualKeyInfo { Code = 222, Name = "Quote (')" },
+                new VirtualKeyInfo { Code = 256, Name = "Scroll Up" },
+                new VirtualKeyInfo { Code = 257, Name = "Scroll Down" }
             });
         }
 

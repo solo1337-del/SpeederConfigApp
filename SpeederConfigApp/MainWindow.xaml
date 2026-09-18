@@ -147,7 +147,7 @@
                                 </Border>
 
                                 <!-- Line 29: Macro File Name -->
-                                <Border Style="{StaticResource SettingCard}">
+                                <Border Style="{StaticResource SettingCard}" ToolTip="Name of the .ini macro file located in the same directory as config.txt.">
                                     <Grid>
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="*" />
@@ -158,9 +158,9 @@
                                                 <Border Style="{StaticResource LineBadge}"><TextBlock Text="LINE 29" Style="{StaticResource LineBadgeText}" /></Border>
                                                 <TextBlock Text="Macro File Name" Style="{StaticResource SettingTitle}" />
                                             </StackPanel>
-                                            <TextBlock Text="File name including extension (e.g., Recorded Waymarks.ini or macros.ini)." Style="{StaticResource SettingDesc}" />
+                                            <TextBlock Text="Name of the .ini macro file located in the same directory as config.txt." Style="{StaticResource SettingDesc}" />
                                         </StackPanel>
-                                        <TextBox Grid.Column="1" Text="{Binding Settings.MacroFileName, UpdateSourceTrigger=PropertyChanged}" />
+                                        <TextBox Grid.Column="1" Text="{Binding Settings.MacroFileName, UpdateSourceTrigger=PropertyChanged}" ToolTip="Name of the .ini macro file located in the same directory as config.txt." />
                                     </Grid>
                                 </Border>
 
@@ -726,7 +726,7 @@
                                 </Border>
 
                                 <!-- Line 31: Mouse Smoothing Value -->
-                                <Border Style="{StaticResource SettingCard}">
+                                <Border Style="{StaticResource SettingCard}" ToolTip="Mouse smoothing factor (0 = disabled, e.g. 200). Directly influences smoothness and detection resistance for 'm[x],[y]', 'grid', and 'circle' commands.">
                                     <Grid>
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="*" />
@@ -737,9 +737,9 @@
                                                 <Border Style="{StaticResource LineBadge}"><TextBlock Text="LINE 31" Style="{StaticResource LineBadgeText}" /></Border>
                                                 <TextBlock Text="Mouse Smoothing Value" Style="{StaticResource SettingTitle}" />
                                             </StackPanel>
-                                            <TextBlock Text="Lower number = smoother mouse path. 0 = disabled. Around 200 is recommended to evade bot detection." Style="{StaticResource SettingDesc}" />
+                                            <TextBlock Text="Mouse smoothing factor (0 = disabled, e.g. 200). Directly influences smoothness and detection resistance for 'm[x],[y]', 'grid', and 'circle' commands." Style="{StaticResource SettingDesc}" />
                                         </StackPanel>
-                                        <TextBox Grid.Column="1" Text="{Binding Settings.MouseSmoothing, UpdateSourceTrigger=PropertyChanged}" TextAlignment="Center" />
+                                        <TextBox Grid.Column="1" Text="{Binding Settings.MouseSmoothing, UpdateSourceTrigger=PropertyChanged}" TextAlignment="Center" ToolTip="Mouse smoothing factor (0 = disabled, e.g. 200). Directly influences smoothness and detection resistance for 'm[x],[y]', 'grid', and 'circle' commands." />
                                     </Grid>
                                 </Border>
 
@@ -762,7 +762,7 @@
                                 </Border>
 
                                 <!-- Line 33: Multiplier for -gpc Command -->
-                                <Border Style="{StaticResource SettingCard}">
+                                <Border Style="{StaticResource SettingCard}" ToolTip="DPI / scaling multiplier used by the -gpc console command to query pixel colors accurately.">
                                     <Grid>
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="*" />
@@ -773,9 +773,9 @@
                                                 <Border Style="{StaticResource LineBadge}"><TextBlock Text="LINE 33" Style="{StaticResource LineBadgeText}" /></Border>
                                                 <TextBlock Text="DPI Scaling Multiplier (-gpc / gp keys)" Style="{StaticResource SettingTitle}" />
                                             </StackPanel>
-                                            <TextBlock Text="Screen DPI/scaling multiplier for pixel color retrieval (e.g., 1 for 100%, 2 for 4K / 200% scale)." Style="{StaticResource SettingDesc}" />
+                                            <TextBlock Text="DPI / scaling multiplier used by the -gpc console command to query pixel colors accurately." Style="{StaticResource SettingDesc}" />
                                         </StackPanel>
-                                        <TextBox Grid.Column="1" Text="{Binding Settings.GpcMultiplier, StringFormat='{}{0:0.##}', UpdateSourceTrigger=PropertyChanged}" TextAlignment="Center" />
+                                        <TextBox Grid.Column="1" Text="{Binding Settings.GpcMultiplier, StringFormat='{}{0:0.##}', UpdateSourceTrigger=PropertyChanged}" TextAlignment="Center" ToolTip="DPI / scaling multiplier used by the -gpc console command to query pixel colors accurately." />
                                     </Grid>
                                 </Border>
                             </StackPanel>
@@ -1057,26 +1057,26 @@
                                 </Border>
 
                                 <!-- Line 47: ESP 3D Targeting & Coordinate Projection -->
-                                <Border Style="{StaticResource SettingCard}">
+                                <Border Style="{StaticResource SettingCard}" ToolTip="3D camera projection parameters (FOV|Yaw|Pitch). Required to be set accurately for world-to-screen targeting commands ('tcp', 'tcm', 'tcg', 'tphp', 'aim').">
                                     <StackPanel>
                                         <StackPanel Orientation="Horizontal">
                                             <Border Style="{StaticResource LineBadge}"><TextBlock Text="LINE 47" Style="{StaticResource LineBadgeText}" /></Border>
                                             <TextBlock Text="ESP &amp; Cursor Targeting 3D Projection (FOV|Yaw|Pitch)" Style="{StaticResource SettingTitle}" />
                                         </StackPanel>
-                                        <TextBlock Text="Translates 3D game coordinates to 2D screen coordinates. Increase FOV (e.g. 80) if Line 21 FOV is zoomed out." Style="{StaticResource SettingDesc}" />
+                                        <TextBlock Text="3D camera projection parameters (FOV|Yaw|Pitch). Required to be set accurately for world-to-screen targeting commands ('tcp', 'tcm', 'tcg', 'tphp', 'aim')." Style="{StaticResource SettingDesc}" />
 
                                         <UniformGrid Columns="3" Margin="0,4,0,0">
                                             <StackPanel Margin="4">
                                                 <TextBlock Text="Targeting FOV (default 46.5)" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" />
-                                                <TextBox Text="{Binding Settings.EspTargetingFov, StringFormat='{}{0:0.##}', UpdateSourceTrigger=PropertyChanged}" />
+                                                <TextBox Text="{Binding Settings.EspTargetingFov, StringFormat='{}{0:0.##}', UpdateSourceTrigger=PropertyChanged}" ToolTip="3D camera projection parameters (FOV|Yaw|Pitch). Required to be set accurately for world-to-screen targeting commands ('tcp', 'tcm', 'tcg', 'tphp', 'aim')." />
                                             </StackPanel>
                                             <StackPanel Margin="4">
                                                 <TextBlock Text="Camera Yaw Adj. (default 7.0)" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" />
-                                                <TextBox Text="{Binding Settings.EspCameraYaw, StringFormat='{}{0:0.##}', UpdateSourceTrigger=PropertyChanged}" />
+                                                <TextBox Text="{Binding Settings.EspCameraYaw, StringFormat='{}{0:0.##}', UpdateSourceTrigger=PropertyChanged}" ToolTip="3D camera projection parameters (FOV|Yaw|Pitch). Required to be set accurately for world-to-screen targeting commands ('tcp', 'tcm', 'tcg', 'tphp', 'aim')." />
                                             </StackPanel>
                                             <StackPanel Margin="4">
                                                 <TextBlock Text="Camera Pitch Adj. (default 0.02)" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" />
-                                                <TextBox Text="{Binding Settings.EspCameraPitch, StringFormat='{}{0:0.###}', UpdateSourceTrigger=PropertyChanged}" />
+                                                <TextBox Text="{Binding Settings.EspCameraPitch, StringFormat='{}{0:0.###}', UpdateSourceTrigger=PropertyChanged}" ToolTip="3D camera projection parameters (FOV|Yaw|Pitch). Required to be set accurately for world-to-screen targeting commands ('tcp', 'tcm', 'tcg', 'tphp', 'aim')." />
                                             </StackPanel>
                                         </UniformGrid>
                                     </StackPanel>
@@ -1312,7 +1312,7 @@
                         <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="4,8,8,4">
                             <StackPanel>
                                 <!-- Line 22: Waymark Pause/Resume Key -->
-                                <Border Style="{StaticResource SettingCard}">
+                                <Border Style="{StaticResource SettingCard}" ToolTip="Pause or resume waymark progression (used with -twrepeat*, -tw*, and -twresume console commands).">
                                     <Grid>
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="*" />
@@ -1323,14 +1323,14 @@
                                                 <Border Style="{StaticResource LineBadge}"><TextBlock Text="LINE 22" Style="{StaticResource LineBadgeText}" /></Border>
                                                 <TextBlock Text="Pause / Resume Waymarks Key" Style="{StaticResource SettingTitle}" />
                                             </StackPanel>
-                                            <TextBlock Text="Virtual key code to instantly pause or resume -twrepeat and -tw path execution." Style="{StaticResource SettingDesc}" />
+                                            <TextBlock Text="Pause or resume waymark progression (used with -twrepeat*, -tw*, and -twresume console commands)." Style="{StaticResource SettingDesc}" />
                                         </StackPanel>
-                                        <controls:KeyPickerControl Grid.Column="1" KeyCode="{Binding Settings.WaymarkPauseResumeKey, Mode=TwoWay}" />
+                                        <controls:KeyPickerControl Grid.Column="1" KeyCode="{Binding Settings.WaymarkPauseResumeKey, Mode=TwoWay}" ToolTip="Pause or resume waymark progression (used with -twrepeat*, -tw*, and -twresume console commands)." />
                                     </Grid>
                                 </Border>
 
                                 <!-- Line 27: Record Coordinates Key (-cl) -->
-                                <Border Style="{StaticResource SettingCard}">
+                                <Border Style="{StaticResource SettingCard}" ToolTip="Hotkey to manually save your current coordinates (-cl command). Pairs with -record and -recordkeys console commands.">
                                     <Grid>
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="*" />
@@ -1341,9 +1341,9 @@
                                                 <Border Style="{StaticResource LineBadge}"><TextBlock Text="LINE 27" Style="{StaticResource LineBadgeText}" /></Border>
                                                 <TextBlock Text="Record Coordinates Key (-cl trigger)" Style="{StaticResource SettingTitle}" />
                                             </StackPanel>
-                                            <TextBlock Text="Copies current coordinates to clipboard and writes waypoint to Recorded Waymarks.ini." Style="{StaticResource SettingDesc}" />
+                                            <TextBlock Text="Hotkey to manually save your current coordinates (-cl command). Pairs with -record and -recordkeys console commands." Style="{StaticResource SettingDesc}" />
                                         </StackPanel>
-                                        <controls:KeyPickerControl Grid.Column="1" KeyCode="{Binding Settings.RecordCoordinatesKey, Mode=TwoWay}" />
+                                        <controls:KeyPickerControl Grid.Column="1" KeyCode="{Binding Settings.RecordCoordinatesKey, Mode=TwoWay}" ToolTip="Hotkey to manually save your current coordinates (-cl command). Pairs with -record and -recordkeys console commands." />
                                     </Grid>
                                 </Border>
 
@@ -1366,7 +1366,7 @@
                                 </Border>
 
                                 <!-- Line 24: Sleep Randomness Jitter -->
-                                <Border Style="{StaticResource SettingCard}">
+                                <Border Style="{StaticResource SettingCard}" ToolTip="Sleep jitter range (0 to 1) applied to waymark wait times and delays (used with 's' timer commands to avoid bot detection).">
                                     <Grid>
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="*" />
@@ -1377,9 +1377,9 @@
                                                 <Border Style="{StaticResource LineBadge}"><TextBlock Text="LINE 24" Style="{StaticResource LineBadgeText}" /></Border>
                                                 <TextBlock Text="Sleep Random Jitter Range (0 to 1)" Style="{StaticResource SettingTitle}" />
                                             </StackPanel>
-                                            <TextBlock Text="Randomizes waymark sleep pauses (e.g., 0.05 on s2000 yields 1900-2100ms) to evade macro pattern detection." Style="{StaticResource SettingDesc}" />
+                                            <TextBlock Text="Sleep jitter range (0 to 1) applied to waymark wait times and delays (used with 's' timer commands to avoid bot detection)." Style="{StaticResource SettingDesc}" />
                                         </StackPanel>
-                                        <TextBox Grid.Column="1" Text="{Binding Settings.WaymarkSleepJitter, StringFormat='{}{0:0.###}', UpdateSourceTrigger=PropertyChanged}" TextAlignment="Center" />
+                                        <TextBox Grid.Column="1" Text="{Binding Settings.WaymarkSleepJitter, StringFormat='{}{0:0.###}', UpdateSourceTrigger=PropertyChanged}" TextAlignment="Center" ToolTip="Sleep jitter range (0 to 1) applied to waymark wait times and delays (used with 's' timer commands to avoid bot detection)." />
                                     </Grid>
                                 </Border>
 
@@ -1402,7 +1402,7 @@
                                 </Border>
 
                                 <!-- Line 26: Cursor Offset Distance -->
-                                <Border Style="{StaticResource SettingCard}">
+                                <Border Style="{StaticResource SettingCard}" ToolTip="Cursor travel distance in pixels for resource targeting commands like 'tcg' and 'tcg*'.">
                                     <Grid>
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="*" />
@@ -1413,9 +1413,9 @@
                                                 <Border Style="{StaticResource LineBadge}"><TextBlock Text="LINE 26" Style="{StaticResource LineBadgeText}" /></Border>
                                                 <TextBlock Text="Cursor Offset Distance (Pixels)" Style="{StaticResource SettingTitle}" />
                                             </StackPanel>
-                                            <TextBlock Text="How many pixels from character cursor moves for movement clicks (default ~100)." Style="{StaticResource SettingDesc}" />
+                                            <TextBlock Text="Cursor travel distance in pixels for resource targeting commands like 'tcg' and 'tcg*'." Style="{StaticResource SettingDesc}" />
                                         </StackPanel>
-                                        <TextBox Grid.Column="1" Text="{Binding Settings.WaymarkCursorOffsetPx, UpdateSourceTrigger=PropertyChanged}" TextAlignment="Center" />
+                                        <TextBox Grid.Column="1" Text="{Binding Settings.WaymarkCursorOffsetPx, UpdateSourceTrigger=PropertyChanged}" TextAlignment="Center" ToolTip="Cursor travel distance in pixels for resource targeting commands like 'tcg' and 'tcg*'." />
                                     </Grid>
                                 </Border>
 

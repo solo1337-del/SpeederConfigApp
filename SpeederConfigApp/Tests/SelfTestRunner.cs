@@ -86,6 +86,39 @@ namespace SpeederConfigApp.Tests
             var space = VirtualKeyHelper.GetKeyByCode(32);
             Assert(space.Name == "Space" && space.Code == 32, "VirtualKeyHelper resolves 32 to Space");
 
+            var lshift = VirtualKeyHelper.GetKeyByCode(160);
+            Assert(lshift.Name == "Left Shift" && lshift.Code == 160, "VirtualKeyHelper resolves 160 to Left Shift");
+
+            var rshift = VirtualKeyHelper.GetKeyByCode(161);
+            Assert(rshift.Name == "Right Shift" && rshift.Code == 161, "VirtualKeyHelper resolves 161 to Right Shift");
+
+            var lctrl = VirtualKeyHelper.GetKeyByCode(162);
+            Assert(lctrl.Name == "Left Ctrl" && lctrl.Code == 162, "VirtualKeyHelper resolves 162 to Left Ctrl");
+
+            var rctrl = VirtualKeyHelper.GetKeyByCode(163);
+            Assert(rctrl.Name == "Right Ctrl" && rctrl.Code == 163, "VirtualKeyHelper resolves 163 to Right Ctrl");
+
+            var lalt = VirtualKeyHelper.GetKeyByCode(164);
+            Assert(lalt.Name == "Left Alt" && lalt.Code == 164, "VirtualKeyHelper resolves 164 to Left Alt");
+
+            var ralt = VirtualKeyHelper.GetKeyByCode(165);
+            Assert(ralt.Name == "Right Alt" && ralt.Code == 165, "VirtualKeyHelper resolves 165 to Right Alt");
+
+            var scrollUp = VirtualKeyHelper.GetKeyByCode(256);
+            Assert(scrollUp.Name == "Scroll Up" && scrollUp.Code == 256, "VirtualKeyHelper resolves 256 to Scroll Up");
+
+            var scrollDown = VirtualKeyHelper.GetKeyByCode(257);
+            Assert(scrollDown.Name == "Scroll Down" && scrollDown.Code == 257, "VirtualKeyHelper resolves 257 to Scroll Down");
+
+            var lwin = VirtualKeyHelper.GetKeyByCode(91);
+            Assert(lwin.Name == "Left Windows" && lwin.Code == 91, "VirtualKeyHelper resolves 91 to Left Windows");
+
+            var rwin = VirtualKeyHelper.GetKeyByCode(92);
+            Assert(rwin.Name == "Right Windows" && rwin.Code == 92, "VirtualKeyHelper resolves 92 to Right Windows");
+
+            var apps = VirtualKeyHelper.GetKeyByCode(93);
+            Assert(apps.Name == "Menu / Applications" && apps.Code == 93, "VirtualKeyHelper resolves 93 to Menu / Applications");
+
             // Test 7: Load example config lines from prompt specification
             var sampleLines = new string[55];
             for (int i = 0; i < 55; i++) sampleLines[i] = "";
