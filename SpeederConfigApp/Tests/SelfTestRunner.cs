@@ -341,6 +341,145 @@ keys3=dbg % test line 3
                    parsedCustom.Macros[0].Repeat == 1,
                    "Custom macro serializes and parses Interrupt, EndKeys, and Repeat correctly");
 
+            // Test 10: Waymark Engine Tests (Task 4)
+            Log("-------------------------------------------------");
+            Log("  WAYMARK ENGINE TESTS");
+            Log("-------------------------------------------------");
+
+            string sampleWaymarkIni = @"; Sample Waymark Route from Reference Docs
+[variables]
+variablename=true
+
+[unstick]
+distance=5
+keys=27
+timer=5000
+timer2=2000
+giveup=5
+script=probablydead.ini
+
+[0]
+x=84.66
+y=-78
+z=832
+wait time=30
+keys=2d|s3000|2u|eq % variablename,true|dbg % starting waymarks!|store % variablename,false
+
+[1]
+x=90.34
+y=-60
+z=783.21
+wait time=30
+script=nextinifile.ini|5
+";
+
+            var waymarkModel = WaymarkFileModel.ParseIni(sampleWaymarkIni);
+            Assert(waymarkModel != null, "WaymarkFileModel.ParseIni returns a valid model");
+
+            // Test 2: Verify Variables
+            Assert(waymarkModel!.Variables.Count == 1, "Parsed waymark variables count == 1");
+            Assert(waymarkModel.Variables[0].Name == "variablename", "Variable name == \"variablename\"");
+            Assert(waymarkModel.Variables[0].Value == "true", "Variable value == \"true\"");
+
+            // Test 3: Verify Unstick
+            Assert(waymarkModel.Unstick.Enabled, "Unstick is enabled");
+            Assert(Math.Abs(waymarkModel.Unstick.Distance - 5.0) < 0.001, "Unstick distance == 5");
+            Assert(waymarkModel.Unstick.Keys == "27", "Unstick keys == \"27\"");
+            Assert(waymarkModel.Unstick.Timer == 5000, "Unstick timer == 5000");
+            Assert(waymarkModel.Unstick.Timer2 == 2000, "Unstick timer2 == 2000");
+            Assert(waymarkModel.Unstick.GiveUp == 5, "Unstick giveup == 5");
+            Assert(waymarkModel.Unstick.Script == "probablydead.ini", "Unstick script == \"probablydead.ini\"");
+
+            // Test 4: Verify Points
+            Assert(waymarkModel.Points.Count == 2, "Parsed waymark points count == 2");
+
+            var wp0 = waymarkModel.Points[0];
+            Assert(Math.Abs(wp0.X - 84.66) < 0.001, "Point 0: X == 84.66");
+            Assert(Math.Abs(wp0.Y - (-78)) < 0.001, "Point 0: Y == -78");
+            Assert(Math.Abs(wp0.Z - 832) < 0.001, "Point 0: Z == 832");
+            Assert(wp0.WaitTime == 30, "Point 0: WaitTime == 30");
+            Assert(wp0.Keys.Contains("starting waymarks!"), "Point 0: Keys contains \"starting waymarks!\"");
+
+            var wp1 = waymarkModel.Points[1];
+            Assert(Math.Abs(wp1.X - 90.34) < 0.001, "Point 1: X == 90.34");
+            Assert(Math.Abs(wp1.Y - (-60)) < 0.001, "Point 1: Y == -60");
+            Assert(Math.Abs(wp1.Z - 783.21) < 0.001, "Point 1: Z == 783.21");
+            Assert(wp1.WaitTime == 30, "Point 1: WaitTime == 30");
+            Assert(wp1.Script == "nextinifile.ini|5", "Point 1: Script == \"nextinifile.ini|5\"");
+
+            // Test 5: Verify IsStopMovement helper flag
+            var testPoint = new WaymarkPoint { X = 50.0, WaitTime = 30 };
+            Assert(!testPoint.IsStopMovement, "Default point IsStopMovement == false");
+            testPoint.X = 0.1;
+            Assert(testPoint.IsStopMovement, "Setting X to 0.1 triggers IsStopMovement == true");
+            testPoint.IsStopMovement = false;
+            Assert(!testPoint.IsStopMovement && Math.Abs(testPoint.X - 0.1) >= 0.001, "Setting IsStopMovement = false resets X away from 0.1");
+            testPoint.IsStopMovement = true;
+            Assert(testPoint.IsStopMovement && Math.Abs(testPoint.X - 0.1) < 0.001, "Setting IsStopMovement = true sets X = 0.1");
+
+            // Test 6: Verify IsSeamlessMovement helper flag
+            Assert(!testPoint.IsSeamlessMovement, "WaitTime 30 has IsSeamlessMovement == false");
+            testPoint.WaitTime = 1;
+            Assert(testPoint.IsSeamlessMovement, "Setting WaitTime = 1 triggers IsSeamlessMovement == true");
+            testPoint.IsSeamlessMovement = false;
+            Assert(!testPoint.IsSeamlessMovement && testPoint.WaitTime == 30, "Setting IsSeamlessMovement = false resets WaitTime to 30");
+            testPoint.IsSeamlessMovement = true;
+            Assert(testPoint.IsSeamlessMovement && testPoint.WaitTime == 1, "Setting IsSeamlessMovement = true sets WaitTime = 1");
+
+            // Test 7: Round-trip test
+            string generatedWaymarkIni = waymarkModel.GenerateIni();
+            var roundTripWaymarkModel = WaymarkFileModel.ParseIni(generatedWaymarkIni);
+            Assert(roundTripWaymarkModel.Variables.Count == waymarkModel.Variables.Count, "Round-trip preserves variables count");
+            Assert(roundTripWaymarkModel.Variables[0].Name == waymarkModel.Variables[0].Name &&
+                   roundTripWaymarkModel.Variables[0].Value == waymarkModel.Variables[0].Value, "Round-trip preserves variable name/value");
+            Assert(roundTripWaymarkModel.Unstick.Enabled == waymarkModel.Unstick.Enabled &&
+                   Math.Abs(roundTripWaymarkModel.Unstick.Distance - waymarkModel.Unstick.Distance) < 0.001 &&
+                   roundTripWaymarkModel.Unstick.Keys == waymarkModel.Unstick.Keys &&
+                   roundTripWaymarkModel.Unstick.Timer == waymarkModel.Unstick.Timer &&
+                   roundTripWaymarkModel.Unstick.Timer2 == waymarkModel.Unstick.Timer2 &&
+                   roundTripWaymarkModel.Unstick.GiveUp == waymarkModel.Unstick.GiveUp &&
+                   roundTripWaymarkModel.Unstick.Script == waymarkModel.Unstick.Script, "Round-trip preserves all unstick fields");
+            Assert(roundTripWaymarkModel.Points.Count == waymarkModel.Points.Count, "Round-trip preserves points count");
+            Assert(Math.Abs(roundTripWaymarkModel.Points[0].X - wp0.X) < 0.001 &&
+                   Math.Abs(roundTripWaymarkModel.Points[0].Y - wp0.Y) < 0.001 &&
+                   Math.Abs(roundTripWaymarkModel.Points[0].Z - wp0.Z) < 0.001 &&
+                   roundTripWaymarkModel.Points[0].WaitTime == wp0.WaitTime &&
+                   roundTripWaymarkModel.Points[0].Keys == wp0.Keys, "Round-trip point 0 matches coordinates, wait time, and keys");
+            Assert(Math.Abs(roundTripWaymarkModel.Points[1].X - wp1.X) < 0.001 &&
+                   Math.Abs(roundTripWaymarkModel.Points[1].Y - wp1.Y) < 0.001 &&
+                   Math.Abs(roundTripWaymarkModel.Points[1].Z - wp1.Z) < 0.001 &&
+                   roundTripWaymarkModel.Points[1].WaitTime == wp1.WaitTime &&
+                   roundTripWaymarkModel.Points[1].Script == wp1.Script, "Round-trip point 1 matches coordinates, wait time, and script");
+
+            // Test 8: CreateSampleRoute verification
+            var sampleRoute = WaymarkFileModel.CreateSampleRoute();
+            Assert(sampleRoute.Variables.Count == 1 && sampleRoute.Variables[0].Name == "variablename", "CreateSampleRoute includes variablename");
+            Assert(sampleRoute.Unstick.Enabled && sampleRoute.Unstick.Timer == 5000, "CreateSampleRoute includes unstick failsafe");
+            Assert(sampleRoute.Points.Count == 4, "CreateSampleRoute includes 4 points forming a complete loop");
+            Assert(sampleRoute.Points[3].IsSeamlessMovement, "Sample route point 3 demonstrates seamless movement (WaitTime=1)");
+
+            // Test 9: ReindexPoints and AddPoint
+            var reindexModel = new WaymarkFileModel();
+            var addedP0 = reindexModel.AddPoint(10, 20, 30);
+            var addedP1 = reindexModel.AddPoint(40, 50, 60);
+            Assert(addedP0.Index == 0 && addedP1.Index == 1, "AddPoint sequentially assigns index 0 and 1");
+            addedP0.Index = 99;
+            reindexModel.ReindexPoints();
+            Assert(reindexModel.Points[0].Index == 0 && reindexModel.Points[1].Index == 1, "ReindexPoints normalizes indices to 0, 1");
+
+            // Test 10: Deep Clone
+            var waymarkClone = sampleRoute.Clone();
+            Assert(waymarkClone.Points.Count == 4 && waymarkClone.Variables.Count == 1, "Waymark clone has matching counts");
+            waymarkClone.Points[0].X = 999.9;
+            Assert(sampleRoute.Points[0].X != 999.9, "Modifying cloned point does not affect original route point");
+
+            // Test 11: Disabled Unstick generation omission
+            var noUnstickModel = new WaymarkFileModel();
+            noUnstickModel.Unstick.Enabled = false;
+            noUnstickModel.AddPoint(1, 2, 3);
+            var noUnstickIni = noUnstickModel.GenerateIni();
+            Assert(!noUnstickIni.Contains("[unstick]"), "WaymarkFileModel with Unstick.Enabled == false omits [unstick] section");
+
             Log("=================================================");
             Log($"  TEST RESULTS: {passed} PASSED, {failed} FAILED");
             Log("=================================================");
