@@ -480,6 +480,171 @@ script=nextinifile.ini|5
             var noUnstickIni = noUnstickModel.GenerateIni();
             Assert(!noUnstickIni.Contains("[unstick]"), "WaymarkFileModel with Unstick.Enabled == false omits [unstick] section");
 
+            // Test 12: MainViewModel Studio & Reference Engines (Task 5)
+            Log("-------------------------------------------------");
+            Log("  VIEWMODEL STUDIO & REFERENCE ENGINES TESTS");
+            Log("-------------------------------------------------");
+
+            var studioVm = new MainViewModel();
+
+            // 1. ActiveTabIndex
+            Assert(studioVm.ActiveTabIndex == 0, "MainViewModel initializes with ActiveTabIndex == 0");
+            studioVm.ActiveTabIndex = 1;
+            Assert(studioVm.ActiveTabIndex == 1, "ActiveTabIndex can be updated to 1 (Macro Studio)");
+            studioVm.ActiveTabIndex = 2;
+            Assert(studioVm.ActiveTabIndex == 2, "ActiveTabIndex can be updated to 2 (Waymark Studio)");
+            studioVm.ActiveTabIndex = 3;
+            Assert(studioVm.ActiveTabIndex == 3, "ActiveTabIndex can be updated to 3 (Reference Cheatsheet)");
+
+            // 2. Macro Studio Initialization & Commands
+            Assert(studioVm.MacroFile != null && studioVm.MacroFile.Macros.Count == 8,
+                   "MainViewModel initializes with default MacroFile containing 8 macros");
+            Assert(studioVm.SelectedMacro != null && studioVm.SelectedMacro.TriggerKey == 113,
+                   "MainViewModel initializes with SelectedMacro set to template 0 (F2)");
+
+            // Add macro command
+            int initialMacroCount = studioVm.MacroFile!.Macros.Count;
+            studioVm.AddMacroCommand.Execute(null);
+            Assert(studioVm.MacroFile.Macros.Count == initialMacroCount + 1, "AddMacroCommand increments macro count");
+            Assert(studioVm.SelectedMacro != null && studioVm.SelectedMacro.TriggerKey == 113,
+                   "AddMacroCommand selects newly created macro");
+
+            // Add & remove keys lines
+            int initialKeyLines = studioVm.SelectedMacro!.KeysLines.Count;
+            studioVm.AddKeysLineCommand.Execute("s500");
+            Assert(studioVm.SelectedMacro!.KeysLines.Count == initialKeyLines + 1 &&
+                   studioVm.SelectedMacro.KeysLines.Last() == "s500",
+                   "AddKeysLineCommand appends line to SelectedMacro.KeysLines");
+            studioVm.RemoveKeysLineCommand.Execute("s500");
+            Assert(studioVm.SelectedMacro!.KeysLines.Count == initialKeyLines,
+                   "RemoveKeysLineCommand removes specified line from SelectedMacro.KeysLines");
+
+            // Clone selected macro
+            var macroToClone = studioVm.SelectedMacro;
+            studioVm.CloneSelectedMacroCommand.Execute(null);
+            Assert(studioVm.SelectedMacro != macroToClone, "CloneSelectedMacroCommand selects newly cloned instance");
+            Assert(studioVm.SelectedMacro!.Description.Contains("Copy"), "Cloned macro description contains '(Copy)'");
+
+            // Delete selected macro
+            int countBeforeDelete = studioVm.MacroFile.Macros.Count;
+            studioVm.DeleteSelectedMacroCommand.Execute(null);
+            Assert(studioVm.MacroFile.Macros.Count == countBeforeDelete - 1, "DeleteSelectedMacroCommand removes macro");
+
+            // Apply macro template command
+            studioVm.ApplyMacroTemplateCommand.Execute("combat");
+            Assert(studioVm.SelectedMacro != null && studioVm.SelectedMacro.Description.Contains("Combat"),
+                   "ApplyMacroTemplateCommand applies combat template");
+
+            // Link macro to config
+            studioVm.MacroFile.FileName = "PvP_Macros.ini";
+            studioVm.LinkMacroToConfigCommand.Execute(null);
+            Assert(studioVm.Settings.MacroFileName == "PvP_Macros.ini",
+                   "LinkMacroToConfigCommand updates Settings.MacroFileName to MacroFile.FileName");
+            Assert(studioVm.RawConfigPreview.Contains("PvP_Macros.ini"),
+                   "LinkMacroToConfigCommand updates Line 29 in RawConfigPreview");
+
+            // 3. Waymark Studio Initialization & Commands
+            Assert(studioVm.WaymarkFile != null && studioVm.WaymarkFile.Points.Count == 4,
+                   "MainViewModel initializes with default WaymarkFile containing 4 points");
+            Assert(studioVm.SelectedWaymarkPoint != null && studioVm.SelectedWaymarkPoint.Index == 0,
+                   "MainViewModel initializes with SelectedWaymarkPoint at index 0");
+            Assert(studioVm.SelectedWaymarkVariable != null && studioVm.SelectedWaymarkVariable.Name == "variablename",
+                   "MainViewModel initializes with SelectedWaymarkVariable");
+
+            // Add waypoint maintaining sequential index
+            int initialPointCount = studioVm.WaymarkFile!.Points.Count;
+            studioVm.AddWaymarkPointCommand.Execute(null);
+            Assert(studioVm.WaymarkFile.Points.Count == initialPointCount + 1, "AddWaymarkPointCommand increments point count");
+            Assert(studioVm.SelectedWaymarkPoint != null && studioVm.SelectedWaymarkPoint.Index == initialPointCount,
+                   "AddWaymarkPointCommand assigns sequential index to new waypoint");
+
+            // Move waymark up and down
+            studioVm.MoveWaymarkUpCommand.Execute(null);
+            Assert(studioVm.SelectedWaymarkPoint!.Index == initialPointCount - 1,
+                   "MoveWaymarkUpCommand moves point up and updates index");
+            studioVm.MoveWaymarkDownCommand.Execute(null);
+            Assert(studioVm.SelectedWaymarkPoint!.Index == initialPointCount,
+                   "MoveWaymarkDownCommand moves point down and restores index");
+
+            // Toggle stop movement (x=0.1)
+            Assert(!studioVm.SelectedWaymarkPoint!.IsStopMovement, "New point initially has IsStopMovement == false");
+            studioVm.ToggleStopMovementCommand.Execute(null);
+            Assert(studioVm.SelectedWaymarkPoint!.IsStopMovement && Math.Abs(studioVm.SelectedWaymarkPoint.X - 0.1) < 0.001,
+                   "ToggleStopMovementCommand sets x=0.1 on selected waypoint");
+            studioVm.ToggleStopMovementCommand.Execute(null);
+            Assert(!studioVm.SelectedWaymarkPoint!.IsStopMovement,
+                   "ToggleStopMovementCommand toggles back to normal movement");
+
+            // Toggle seamless movement (wait time=1)
+            Assert(!studioVm.SelectedWaymarkPoint!.IsSeamlessMovement, "Point initially has IsSeamlessMovement == false");
+            studioVm.ToggleSeamlessMovementCommand.Execute(null);
+            Assert(studioVm.SelectedWaymarkPoint!.IsSeamlessMovement && studioVm.SelectedWaymarkPoint.WaitTime == 1,
+                   "ToggleSeamlessMovementCommand sets wait time=1 on selected waypoint");
+            studioVm.ToggleSeamlessMovementCommand.Execute(null);
+            Assert(!studioVm.SelectedWaymarkPoint!.IsSeamlessMovement && studioVm.SelectedWaymarkPoint.WaitTime == 30,
+                   "ToggleSeamlessMovementCommand restores default wait time (30ms)");
+
+            // Delete waypoint and verify re-indexing
+            studioVm.DeleteSelectedWaymarkPointCommand.Execute(null);
+            Assert(studioVm.WaymarkFile.Points.Count == initialPointCount, "DeleteSelectedWaymarkPointCommand removes waypoint");
+            bool isSequenced = true;
+            for (int i = 0; i < studioVm.WaymarkFile.Points.Count; i++)
+            {
+                if (studioVm.WaymarkFile.Points[i].Index != i)
+                {
+                    isSequenced = false;
+                    break;
+                }
+            }
+            Assert(isSequenced, "Points collection remains strictly sequentially indexed after deletion");
+
+            // Manage variables
+            int initialVarCount = studioVm.WaymarkFile.Variables.Count;
+            studioVm.AddVariableCommand.Execute(null);
+            Assert(studioVm.WaymarkFile.Variables.Count == initialVarCount + 1, "AddVariableCommand increments variable count");
+            studioVm.RemoveVariableCommand.Execute(studioVm.SelectedWaymarkVariable);
+            Assert(studioVm.WaymarkFile.Variables.Count == initialVarCount, "RemoveVariableCommand decrements variable count");
+
+            // 4. Reference Tab & Filtering Engine
+            Assert(studioVm.FilteredConsoleCommands.Count == 20,
+                   "FilteredConsoleCommands populates with all 20 console commands");
+            Assert(studioVm.FilteredMacroCommands.Count >= 50,
+                   "FilteredMacroCommands populates with rich macro syntax library (>= 50 items)");
+            Assert(studioVm.FilteredVirtualKeys.Count >= 100,
+                   "FilteredVirtualKeys populates with comprehensive virtual keys (>= 100 items)");
+            Assert(studioVm.FilteredVirtualKeys.Any(k => k.Category == "Function" && k.Name == "F2" && k.Code == 113),
+                   "Virtual keys repository categorizes F2 as Function key with code 113");
+
+            // Search filter: "record"
+            studioVm.SearchReferenceText = "record";
+            Assert(studioVm.FilteredConsoleCommands.Count == 2 &&
+                   studioVm.FilteredConsoleCommands.Any(c => c.Command == "-record") &&
+                   studioVm.FilteredConsoleCommands.Any(c => c.Command == "-recordkeys"),
+                   "Searching 'record' filters console commands to exactly -record and -recordkeys");
+
+            // Search filter: "tcg %"
+            studioVm.SearchReferenceText = "tcg %";
+            Assert(studioVm.FilteredMacroCommands.Any(m => m.Command.Contains("tcg %")),
+                   "Searching 'tcg %' finds node target by name in macro commands");
+
+            // Search filter: "Shift"
+            studioVm.SearchReferenceText = "Shift";
+            Assert(studioVm.FilteredVirtualKeys.Any(k => k.Name.Contains("Shift")),
+                   "Searching 'Shift' finds Shift keys in FilteredVirtualKeys");
+
+            // Reset search filter
+            studioVm.SearchReferenceText = "";
+            Assert(studioVm.FilteredConsoleCommands.Count == 20 &&
+                   studioVm.FilteredMacroCommands.Count >= 50 &&
+                   studioVm.FilteredVirtualKeys.Count >= 100,
+                   "Clearing search filter restores full collections for all 3 categories");
+
+            // Copy snippet command execution test (headless safe)
+            var snippetCommand = studioVm.FilteredConsoleCommands.First();
+            studioVm.CopyReferenceSnippetCommand.Execute(snippetCommand);
+            Assert(!string.IsNullOrEmpty(studioVm.StatusMessage),
+                   "CopyReferenceSnippetCommand executes and updates StatusMessage without throwing");
+
             Log("=================================================");
             Log($"  TEST RESULTS: {passed} PASSED, {failed} FAILED");
             Log("=================================================");

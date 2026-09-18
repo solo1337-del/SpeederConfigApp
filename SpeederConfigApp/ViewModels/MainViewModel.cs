@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
 using System.IO;
@@ -19,6 +21,9 @@ namespace SpeederConfigApp.ViewModels
         private string _statusMessage = "Ready. Configure settings or open an existing config.txt";
         private bool _statusIsError = false;
 
+        // Active Tab Index (0 = Config 55 Lines, 1 = Macro Studio, 2 = Waymark Studio, 3 = Reference Cheatsheet)
+        private int _activeTabIndex = 0;
+
         // Bounding box calculator properties
         private int _calcResWidth = 1920;
         private int _calcResHeight = 1080;
@@ -28,6 +33,27 @@ namespace SpeederConfigApp.ViewModels
         // Filter selection
         private GatheringFilterItem? _selectedGatheringFilter;
         private MobColorFilterItem? _selectedMobFilter;
+
+        // Macro Studio properties
+        private MacroFileModel _macroFile = null!;
+        private MacroItem? _selectedMacro;
+
+        // Waymark Studio properties
+        private WaymarkFileModel _waymarkFile = null!;
+        private WaymarkPoint? _selectedWaymarkPoint;
+        private WaymarkVariable? _selectedWaymarkVariable;
+
+        // Reference Tab properties & filtering
+        private string _searchReferenceText = string.Empty;
+        private readonly List<ConsoleCommandItem> _allConsoleCommands;
+        private readonly List<MacroSyntaxItem> _allMacroCommands;
+        private readonly List<VirtualKeyInfo> _allVirtualKeys;
+
+        public int ActiveTabIndex
+        {
+            get => _activeTabIndex;
+            set => SetProperty(ref _activeTabIndex, value);
+        }
 
         public ConfigSettings Settings
         {
@@ -124,7 +150,70 @@ namespace SpeederConfigApp.ViewModels
             set => SetProperty(ref _selectedMobFilter, value);
         }
 
+        // Macro Studio Models
+        public MacroFileModel MacroFile
+        {
+            get => _macroFile;
+            set
+            {
+                if (SetProperty(ref _macroFile, value))
+                {
+                    SelectedMacro = _macroFile?.Macros.FirstOrDefault();
+                }
+            }
+        }
+
+        public MacroItem? SelectedMacro
+        {
+            get => _selectedMacro;
+            set => SetProperty(ref _selectedMacro, value);
+        }
+
+        // Waymark Studio Models
+        public WaymarkFileModel WaymarkFile
+        {
+            get => _waymarkFile;
+            set
+            {
+                if (SetProperty(ref _waymarkFile, value))
+                {
+                    SelectedWaymarkPoint = _waymarkFile?.Points.FirstOrDefault();
+                    SelectedWaymarkVariable = _waymarkFile?.Variables.FirstOrDefault();
+                }
+            }
+        }
+
+        public WaymarkPoint? SelectedWaymarkPoint
+        {
+            get => _selectedWaymarkPoint;
+            set => SetProperty(ref _selectedWaymarkPoint, value);
+        }
+
+        public WaymarkVariable? SelectedWaymarkVariable
+        {
+            get => _selectedWaymarkVariable;
+            set => SetProperty(ref _selectedWaymarkVariable, value);
+        }
+
+        // Reference Tab Collections
+        public string SearchReferenceText
+        {
+            get => _searchReferenceText;
+            set
+            {
+                if (SetProperty(ref _searchReferenceText, value))
+                {
+                    ApplyReferenceFilter();
+                }
+            }
+        }
+
+        public ObservableCollection<ConsoleCommandItem> FilteredConsoleCommands { get; } = new ObservableCollection<ConsoleCommandItem>();
+        public ObservableCollection<MacroSyntaxItem> FilteredMacroCommands { get; } = new ObservableCollection<MacroSyntaxItem>();
+        public ObservableCollection<VirtualKeyInfo> FilteredVirtualKeys { get; } = new ObservableCollection<VirtualKeyInfo>();
+
         #region Commands
+        // Config Tab Commands
         public RelayCommand NewConfigCommand { get; }
         public RelayCommand OpenConfigCommand { get; }
         public RelayCommand SaveConfigCommand { get; }
@@ -141,6 +230,36 @@ namespace SpeederConfigApp.ViewModels
         public RelayCommand ApplyConsolePresetTopLeftCommand { get; }
         public RelayCommand ApplyConsolePresetBottomRightCommand { get; }
         public RelayCommand ApplyConsolePresetOverlayCommand { get; }
+
+        // Macro Studio Commands
+        public RelayCommand NewMacroFileCommand { get; }
+        public RelayCommand OpenMacroFileCommand { get; }
+        public RelayCommand SaveMacroFileCommand { get; }
+        public RelayCommand SaveAsMacroFileCommand { get; }
+        public RelayCommand AddMacroCommand { get; }
+        public RelayCommand DeleteSelectedMacroCommand { get; }
+        public RelayCommand CloneSelectedMacroCommand { get; }
+        public RelayCommand AddKeysLineCommand { get; }
+        public RelayCommand RemoveKeysLineCommand { get; }
+        public RelayCommand ApplyMacroTemplateCommand { get; }
+        public RelayCommand LinkMacroToConfigCommand { get; }
+
+        // Waymark Studio Commands
+        public RelayCommand NewWaymarkFileCommand { get; }
+        public RelayCommand OpenWaymarkFileCommand { get; }
+        public RelayCommand SaveWaymarkFileCommand { get; }
+        public RelayCommand SaveAsWaymarkFileCommand { get; }
+        public RelayCommand AddWaymarkPointCommand { get; }
+        public RelayCommand DeleteSelectedWaymarkPointCommand { get; }
+        public RelayCommand MoveWaymarkUpCommand { get; }
+        public RelayCommand MoveWaymarkDownCommand { get; }
+        public RelayCommand ToggleStopMovementCommand { get; }
+        public RelayCommand ToggleSeamlessMovementCommand { get; }
+        public RelayCommand AddVariableCommand { get; }
+        public RelayCommand RemoveVariableCommand { get; }
+
+        // Reference Tab Commands
+        public RelayCommand CopyReferenceSnippetCommand { get; }
         #endregion
 
         public MainViewModel()
@@ -150,6 +269,7 @@ namespace SpeederConfigApp.ViewModels
             _settings.GatheringFilters.CollectionChanged += OnCollectionChanged;
             _settings.MobColorFilters.CollectionChanged += OnCollectionChanged;
 
+            // Initialize Config Tab Commands
             NewConfigCommand = new RelayCommand(ExecuteNewConfig);
             OpenConfigCommand = new RelayCommand(ExecuteOpenConfig);
             SaveConfigCommand = new RelayCommand(ExecuteSaveConfig);
@@ -220,6 +340,48 @@ namespace SpeederConfigApp.ViewModels
                 StatusIsError = false;
                 UpdatePreview();
             });
+
+            // Initialize Macro Studio
+            _macroFile = MacroFileModel.CreateDefaultTemplates();
+            _selectedMacro = _macroFile.Macros.FirstOrDefault();
+
+            NewMacroFileCommand = new RelayCommand(ExecuteNewMacroFile);
+            OpenMacroFileCommand = new RelayCommand(ExecuteOpenMacroFile);
+            SaveMacroFileCommand = new RelayCommand(ExecuteSaveMacroFile);
+            SaveAsMacroFileCommand = new RelayCommand(ExecuteSaveAsMacroFile);
+            AddMacroCommand = new RelayCommand(ExecuteAddMacro);
+            DeleteSelectedMacroCommand = new RelayCommand(ExecuteDeleteSelectedMacro);
+            CloneSelectedMacroCommand = new RelayCommand(ExecuteCloneSelectedMacro);
+            AddKeysLineCommand = new RelayCommand(ExecuteAddKeysLine);
+            RemoveKeysLineCommand = new RelayCommand(ExecuteRemoveKeysLine);
+            ApplyMacroTemplateCommand = new RelayCommand(ExecuteApplyMacroTemplate);
+            LinkMacroToConfigCommand = new RelayCommand(ExecuteLinkMacroToConfig);
+
+            // Initialize Waymark Studio
+            _waymarkFile = WaymarkFileModel.CreateSampleRoute();
+            _selectedWaymarkPoint = _waymarkFile.Points.FirstOrDefault();
+            _selectedWaymarkVariable = _waymarkFile.Variables.FirstOrDefault();
+
+            NewWaymarkFileCommand = new RelayCommand(ExecuteNewWaymarkFile);
+            OpenWaymarkFileCommand = new RelayCommand(ExecuteOpenWaymarkFile);
+            SaveWaymarkFileCommand = new RelayCommand(ExecuteSaveWaymarkFile);
+            SaveAsWaymarkFileCommand = new RelayCommand(ExecuteSaveAsWaymarkFile);
+            AddWaymarkPointCommand = new RelayCommand(ExecuteAddWaymarkPoint);
+            DeleteSelectedWaymarkPointCommand = new RelayCommand(ExecuteDeleteSelectedWaymarkPoint);
+            MoveWaymarkUpCommand = new RelayCommand(ExecuteMoveWaymarkUp);
+            MoveWaymarkDownCommand = new RelayCommand(ExecuteMoveWaymarkDown);
+            ToggleStopMovementCommand = new RelayCommand(ExecuteToggleStopMovement);
+            ToggleSeamlessMovementCommand = new RelayCommand(ExecuteToggleSeamlessMovement);
+            AddVariableCommand = new RelayCommand(ExecuteAddVariable);
+            RemoveVariableCommand = new RelayCommand(ExecuteRemoveVariable);
+
+            // Initialize Reference Tab
+            _allConsoleCommands = ReferenceRepository.GetAllConsoleCommands().ToList();
+            _allMacroCommands = ReferenceRepository.GetAllMacroSyntax().ToList();
+            _allVirtualKeys = VirtualKeyHelper.AllKeys.ToList();
+
+            CopyReferenceSnippetCommand = new RelayCommand(ExecuteCopyReferenceSnippet);
+            ApplyReferenceFilter();
 
             UpdatePreview();
         }
@@ -320,6 +482,7 @@ namespace SpeederConfigApp.ViewModels
             };
         }
 
+        #region Config Execution Methods
         private void ExecuteNewConfig()
         {
             var msgResult = MessageBox.Show("Reset all settings to safe defaults?", "New Config", MessageBoxButton.YesNo, MessageBoxImage.Question);
@@ -518,5 +681,482 @@ namespace SpeederConfigApp.ViewModels
             StatusMessage = "Applied Windows System Sound command preset.";
             StatusIsError = false;
         }
+        #endregion
+
+        #region Macro Studio Execution Methods
+        private void ExecuteNewMacroFile()
+        {
+            MacroFile = MacroFileModel.CreateDefaultTemplates();
+            StatusMessage = "Created new Macro file template with 8 default macros.";
+            StatusIsError = false;
+        }
+
+        private void ExecuteOpenMacroFile()
+        {
+            var dlg = new OpenFileDialog
+            {
+                Filter = "Macro Files (*.ini)|*.ini|All Files (*.*)|*.*",
+                Title = "Open Macro INI File"
+            };
+            if (dlg.ShowDialog() == true)
+            {
+                try
+                {
+                    MacroFile = MacroFileModel.Load(dlg.FileName);
+                    StatusMessage = $"Loaded {MacroFile.Macros.Count} macros from {MacroFile.FileName}";
+                    StatusIsError = false;
+                }
+                catch (Exception ex)
+                {
+                    StatusMessage = $"Error opening macro file: {ex.Message}";
+                    StatusIsError = true;
+                }
+            }
+        }
+
+        private void ExecuteSaveMacroFile()
+        {
+            if (string.IsNullOrWhiteSpace(MacroFile.FilePath))
+            {
+                ExecuteSaveAsMacroFile();
+                return;
+            }
+            try
+            {
+                MacroFile.Save();
+                StatusMessage = $"Successfully saved macro file to {MacroFile.FilePath}";
+                StatusIsError = false;
+            }
+            catch (Exception ex)
+            {
+                StatusMessage = $"Failed to save macro file: {ex.Message}";
+                StatusIsError = true;
+            }
+        }
+
+        private void ExecuteSaveAsMacroFile()
+        {
+            var dlg = new SaveFileDialog
+            {
+                FileName = string.IsNullOrWhiteSpace(MacroFile.FileName) ? "macros.ini" : MacroFile.FileName,
+                DefaultExt = ".ini",
+                Filter = "Macro Files (*.ini)|*.ini|All Files (*.*)|*.*",
+                Title = "Save Macro File As"
+            };
+            if (dlg.ShowDialog() == true)
+            {
+                try
+                {
+                    MacroFile.Save(dlg.FileName);
+                    StatusMessage = $"Saved macro file to {dlg.FileName}";
+                    StatusIsError = false;
+                }
+                catch (Exception ex)
+                {
+                    StatusMessage = $"Failed to save macro file: {ex.Message}";
+                    StatusIsError = true;
+                }
+            }
+        }
+
+        private void ExecuteAddMacro()
+        {
+            var newMacro = new MacroItem
+            {
+                TriggerKey = 113, // F2 default
+                Repeat = 0,
+                Description = "New Custom Macro"
+            };
+            newMacro.KeysLines.Add("nop");
+            MacroFile.Macros.Add(newMacro);
+            SelectedMacro = newMacro;
+            StatusMessage = "Added new macro.";
+            StatusIsError = false;
+        }
+
+        private void ExecuteDeleteSelectedMacro()
+        {
+            if (SelectedMacro != null)
+            {
+                int idx = MacroFile.Macros.IndexOf(SelectedMacro);
+                MacroFile.Macros.Remove(SelectedMacro);
+                if (idx >= MacroFile.Macros.Count) idx = MacroFile.Macros.Count - 1;
+                SelectedMacro = idx >= 0 ? MacroFile.Macros[idx] : null;
+                StatusMessage = "Deleted selected macro.";
+                StatusIsError = false;
+            }
+        }
+
+        private void ExecuteCloneSelectedMacro()
+        {
+            if (SelectedMacro != null)
+            {
+                var clone = SelectedMacro.Clone();
+                clone.Description = string.IsNullOrWhiteSpace(clone.Description) ? "Copy" : $"{clone.Description} (Copy)";
+                int idx = MacroFile.Macros.IndexOf(SelectedMacro);
+                if (idx >= 0 && idx < MacroFile.Macros.Count - 1)
+                    MacroFile.Macros.Insert(idx + 1, clone);
+                else
+                    MacroFile.Macros.Add(clone);
+                SelectedMacro = clone;
+                StatusMessage = $"Cloned macro [{clone.DisplayName}].";
+                StatusIsError = false;
+            }
+        }
+
+        private void ExecuteAddKeysLine(object? parameter)
+        {
+            if (SelectedMacro != null)
+            {
+                string line = parameter?.ToString() ?? "nop";
+                SelectedMacro.KeysLines.Add(line);
+                StatusMessage = "Added keys line to macro.";
+                StatusIsError = false;
+            }
+        }
+
+        private void ExecuteRemoveKeysLine(object? parameter)
+        {
+            if (SelectedMacro != null)
+            {
+                if (parameter is string line && SelectedMacro.KeysLines.Contains(line))
+                {
+                    SelectedMacro.KeysLines.Remove(line);
+                }
+                else if (parameter is int idx && idx >= 0 && idx < SelectedMacro.KeysLines.Count)
+                {
+                    SelectedMacro.KeysLines.RemoveAt(idx);
+                }
+                else if (SelectedMacro.KeysLines.Count > 0)
+                {
+                    SelectedMacro.KeysLines.RemoveAt(SelectedMacro.KeysLines.Count - 1);
+                }
+                StatusMessage = "Removed keys line from macro.";
+                StatusIsError = false;
+            }
+        }
+
+        private void ExecuteApplyMacroTemplate(object? parameter)
+        {
+            if (parameter is MacroItem item)
+            {
+                var clone = item.Clone();
+                MacroFile.Macros.Add(clone);
+                SelectedMacro = clone;
+                StatusMessage = $"Applied macro template: {clone.DisplayName}";
+                StatusIsError = false;
+            }
+            else if (parameter is string name && !string.IsNullOrWhiteSpace(name))
+            {
+                var templates = MacroFileModel.CreateDefaultTemplates();
+                var match = templates.Macros.FirstOrDefault(m =>
+                    m.DisplayName.Contains(name, StringComparison.OrdinalIgnoreCase) ||
+                    m.Description.Contains(name, StringComparison.OrdinalIgnoreCase) ||
+                    m.SectionHeader.Equals(name, StringComparison.OrdinalIgnoreCase));
+                if (match != null)
+                {
+                    var clone = match.Clone();
+                    MacroFile.Macros.Add(clone);
+                    SelectedMacro = clone;
+                    StatusMessage = $"Applied template: {clone.DisplayName}";
+                    StatusIsError = false;
+                }
+                else
+                {
+                    StatusMessage = $"Template '{name}' not found.";
+                    StatusIsError = true;
+                }
+            }
+            else
+            {
+                var templates = MacroFileModel.CreateDefaultTemplates();
+                foreach (var m in templates.Macros)
+                {
+                    MacroFile.Macros.Add(m.Clone());
+                }
+                SelectedMacro = MacroFile.Macros.LastOrDefault();
+                StatusMessage = "Appended default macro templates.";
+                StatusIsError = false;
+            }
+        }
+
+        private void ExecuteLinkMacroToConfig()
+        {
+            Settings.MacroFileName = MacroFile.FileName;
+            UpdatePreview();
+            StatusMessage = $"Linked macro file '{MacroFile.FileName}' to Config Line 29.";
+            StatusIsError = false;
+        }
+        #endregion
+
+        #region Waymark Studio Execution Methods
+        private void ExecuteNewWaymarkFile()
+        {
+            WaymarkFile = WaymarkFileModel.CreateSampleRoute();
+            StatusMessage = "Created new sample Waymark route with 4 waypoints.";
+            StatusIsError = false;
+        }
+
+        private void ExecuteOpenWaymarkFile()
+        {
+            var dlg = new OpenFileDialog
+            {
+                Filter = "Waymark Files (*.ini)|*.ini|All Files (*.*)|*.*",
+                Title = "Open Waymark INI File"
+            };
+            if (dlg.ShowDialog() == true)
+            {
+                try
+                {
+                    WaymarkFile = WaymarkFileModel.Load(dlg.FileName);
+                    StatusMessage = $"Loaded {WaymarkFile.Points.Count} waypoints from {WaymarkFile.FileName}";
+                    StatusIsError = false;
+                }
+                catch (Exception ex)
+                {
+                    StatusMessage = $"Error opening waymark file: {ex.Message}";
+                    StatusIsError = true;
+                }
+            }
+        }
+
+        private void ExecuteSaveWaymarkFile()
+        {
+            if (string.IsNullOrWhiteSpace(WaymarkFile.FilePath))
+            {
+                ExecuteSaveAsWaymarkFile();
+                return;
+            }
+            try
+            {
+                WaymarkFile.Save();
+                StatusMessage = $"Successfully saved waymark file to {WaymarkFile.FilePath}";
+                StatusIsError = false;
+            }
+            catch (Exception ex)
+            {
+                StatusMessage = $"Failed to save waymark file: {ex.Message}";
+                StatusIsError = true;
+            }
+        }
+
+        private void ExecuteSaveAsWaymarkFile()
+        {
+            var dlg = new SaveFileDialog
+            {
+                FileName = string.IsNullOrWhiteSpace(WaymarkFile.FileName) ? "Recorded Waymarks.ini" : WaymarkFile.FileName,
+                DefaultExt = ".ini",
+                Filter = "Waymark Files (*.ini)|*.ini|All Files (*.*)|*.*",
+                Title = "Save Waymark File As"
+            };
+            if (dlg.ShowDialog() == true)
+            {
+                try
+                {
+                    WaymarkFile.Save(dlg.FileName);
+                    StatusMessage = $"Saved waymark file to {dlg.FileName}";
+                    StatusIsError = false;
+                }
+                catch (Exception ex)
+                {
+                    StatusMessage = $"Failed to save waymark file: {ex.Message}";
+                    StatusIsError = true;
+                }
+            }
+        }
+
+        private void ExecuteAddWaymarkPoint()
+        {
+            var last = WaymarkFile.Points.LastOrDefault();
+            double newX = last != null ? last.X + 5.0 : 0.0;
+            double newY = last != null ? last.Y : 0.0;
+            double newZ = last != null ? last.Z + 5.0 : 0.0;
+            var pt = WaymarkFile.AddPoint(newX, newY, newZ, 30);
+            SelectedWaymarkPoint = pt;
+            StatusMessage = $"Added Waypoint [{pt.Index}].";
+            StatusIsError = false;
+        }
+
+        private void ExecuteDeleteSelectedWaymarkPoint()
+        {
+            if (SelectedWaymarkPoint != null)
+            {
+                int idx = WaymarkFile.Points.IndexOf(SelectedWaymarkPoint);
+                WaymarkFile.Points.Remove(SelectedWaymarkPoint);
+                WaymarkFile.ReindexPoints();
+                if (idx >= WaymarkFile.Points.Count) idx = WaymarkFile.Points.Count - 1;
+                SelectedWaymarkPoint = idx >= 0 ? WaymarkFile.Points[idx] : null;
+                StatusMessage = "Deleted waypoint and re-indexed route.";
+                StatusIsError = false;
+            }
+        }
+
+        private void ExecuteMoveWaymarkUp()
+        {
+            if (SelectedWaymarkPoint != null)
+            {
+                int idx = WaymarkFile.Points.IndexOf(SelectedWaymarkPoint);
+                if (idx > 0)
+                {
+                    WaymarkFile.Points.Move(idx, idx - 1);
+                    WaymarkFile.ReindexPoints();
+                    StatusMessage = $"Moved Waypoint to index [{SelectedWaymarkPoint.Index}].";
+                    StatusIsError = false;
+                }
+            }
+        }
+
+        private void ExecuteMoveWaymarkDown()
+        {
+            if (SelectedWaymarkPoint != null)
+            {
+                int idx = WaymarkFile.Points.IndexOf(SelectedWaymarkPoint);
+                if (idx >= 0 && idx < WaymarkFile.Points.Count - 1)
+                {
+                    WaymarkFile.Points.Move(idx, idx + 1);
+                    WaymarkFile.ReindexPoints();
+                    StatusMessage = $"Moved Waypoint to index [{SelectedWaymarkPoint.Index}].";
+                    StatusIsError = false;
+                }
+            }
+        }
+
+        private void ExecuteToggleStopMovement()
+        {
+            if (SelectedWaymarkPoint != null)
+            {
+                SelectedWaymarkPoint.IsStopMovement = !SelectedWaymarkPoint.IsStopMovement;
+                StatusMessage = SelectedWaymarkPoint.IsStopMovement
+                    ? $"Waypoint [{SelectedWaymarkPoint.Index}] set to Stop Movement (x=0.1)."
+                    : $"Waypoint [{SelectedWaymarkPoint.Index}] restored to normal movement.";
+                StatusIsError = false;
+            }
+        }
+
+        private void ExecuteToggleSeamlessMovement()
+        {
+            if (SelectedWaymarkPoint != null)
+            {
+                SelectedWaymarkPoint.IsSeamlessMovement = !SelectedWaymarkPoint.IsSeamlessMovement;
+                StatusMessage = SelectedWaymarkPoint.IsSeamlessMovement
+                    ? $"Waypoint [{SelectedWaymarkPoint.Index}] set to Seamless Movement (wait time=1)."
+                    : $"Waypoint [{SelectedWaymarkPoint.Index}] restored to standard wait time (30ms).";
+                StatusIsError = false;
+            }
+        }
+
+        private void ExecuteAddVariable()
+        {
+            var newVar = new WaymarkVariable("newVar", "0");
+            WaymarkFile.Variables.Add(newVar);
+            SelectedWaymarkVariable = newVar;
+            StatusMessage = "Added route variable.";
+            StatusIsError = false;
+        }
+
+        private void ExecuteRemoveVariable(object? parameter)
+        {
+            var target = parameter as WaymarkVariable ?? SelectedWaymarkVariable;
+            if (target != null)
+            {
+                WaymarkFile.Variables.Remove(target);
+                SelectedWaymarkVariable = WaymarkFile.Variables.FirstOrDefault();
+                StatusMessage = "Removed route variable.";
+                StatusIsError = false;
+            }
+        }
+        #endregion
+
+        #region Reference Cheatsheet Methods
+        private void ApplyReferenceFilter()
+        {
+            string term = SearchReferenceText?.Trim() ?? string.Empty;
+
+            // 1. Console Commands
+            FilteredConsoleCommands.Clear();
+            var matchedConsole = string.IsNullOrEmpty(term)
+                ? _allConsoleCommands
+                : _allConsoleCommands.Where(c =>
+                    c.Command.Contains(term, StringComparison.OrdinalIgnoreCase) ||
+                    c.Description.Contains(term, StringComparison.OrdinalIgnoreCase) ||
+                    c.Category.Contains(term, StringComparison.OrdinalIgnoreCase) ||
+                    c.Arguments.Contains(term, StringComparison.OrdinalIgnoreCase) ||
+                    c.Example.Contains(term, StringComparison.OrdinalIgnoreCase) ||
+                    c.Syntax.Contains(term, StringComparison.OrdinalIgnoreCase) ||
+                    c.RelatedConfigLine.Contains(term, StringComparison.OrdinalIgnoreCase) ||
+                    c.Notes.Contains(term, StringComparison.OrdinalIgnoreCase));
+            foreach (var item in matchedConsole)
+            {
+                FilteredConsoleCommands.Add(item);
+            }
+
+            // 2. Macro Syntax
+            FilteredMacroCommands.Clear();
+            var matchedMacro = string.IsNullOrEmpty(term)
+                ? _allMacroCommands
+                : _allMacroCommands.Where(m =>
+                    m.Command.Contains(term, StringComparison.OrdinalIgnoreCase) ||
+                    m.Description.Contains(term, StringComparison.OrdinalIgnoreCase) ||
+                    m.Category.Contains(term, StringComparison.OrdinalIgnoreCase) ||
+                    m.Syntax.Contains(term, StringComparison.OrdinalIgnoreCase) ||
+                    m.Example.Contains(term, StringComparison.OrdinalIgnoreCase) ||
+                    m.Notes.Contains(term, StringComparison.OrdinalIgnoreCase));
+            foreach (var item in matchedMacro)
+            {
+                FilteredMacroCommands.Add(item);
+            }
+
+            // 3. Virtual Keys
+            FilteredVirtualKeys.Clear();
+            var matchedKeys = string.IsNullOrEmpty(term)
+                ? _allVirtualKeys
+                : _allVirtualKeys.Where(k =>
+                    k.Name.Contains(term, StringComparison.OrdinalIgnoreCase) ||
+                    k.Code.ToString().Contains(term, StringComparison.OrdinalIgnoreCase) ||
+                    k.Category.Contains(term, StringComparison.OrdinalIgnoreCase) ||
+                    k.Notes.Contains(term, StringComparison.OrdinalIgnoreCase) ||
+                    k.DisplayText.Contains(term, StringComparison.OrdinalIgnoreCase));
+            foreach (var item in matchedKeys)
+            {
+                FilteredVirtualKeys.Add(item);
+            }
+        }
+
+        private void ExecuteCopyReferenceSnippet(object? parameter)
+        {
+            string? textToCopy = null;
+            if (parameter is ConsoleCommandItem cci)
+            {
+                textToCopy = string.IsNullOrWhiteSpace(cci.Example) ? cci.Syntax : cci.Example;
+            }
+            else if (parameter is MacroSyntaxItem msi)
+            {
+                textToCopy = string.IsNullOrWhiteSpace(msi.Example) ? msi.Syntax : msi.Example;
+            }
+            else if (parameter is VirtualKeyInfo vki)
+            {
+                textToCopy = vki.Code.ToString();
+            }
+            else if (parameter is string str)
+            {
+                textToCopy = str;
+            }
+
+            if (!string.IsNullOrEmpty(textToCopy))
+            {
+                try
+                {
+                    Clipboard.SetText(textToCopy);
+                    StatusMessage = $"Copied snippet to clipboard: {textToCopy}";
+                    StatusIsError = false;
+                }
+                catch (Exception ex)
+                {
+                    StatusMessage = $"Clipboard error: {ex.Message}";
+                    StatusIsError = true;
+                }
+            }
+        }
+        #endregion
     }
 }
