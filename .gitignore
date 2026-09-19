@@ -44,3 +44,6 @@ $RECYCLE.BIN/
 
 # Superpowers SDD workspace
 .superpowers/
+
+# Documentation (local only, do not push to GitHub)
+docs/
