@@ -22,6 +22,8 @@ config.txt
 # Build results
 [Dd]ebug/
 [Rr]elease/
+release-singlefile/
+*.zip
 x64/
 x86/
 [Bb]uild/
