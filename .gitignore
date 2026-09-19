@@ -22,7 +22,7 @@ config.txt
 # Build results
 [Dd]ebug/
 [Rr]elease/
-release-singlefile/
+release-*/
 *.zip
 x64/
 x86/
